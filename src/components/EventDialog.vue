@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useEventsStore } from '../stores/eventsStore'
+import { useCalendarStore } from '../stores/calendarStore'
 import { validateEvent } from '../core/events/engine'
 import type { EventDraft } from '../core/events/types'
 import type { RecurrenceFrequency } from '../core/events/types'
+import DatePicker from './DatePicker.vue'
 
 const eventsStore = useEventsStore()
+const calendarStore = useCalendarStore()
 
 const dialog = computed(() => eventsStore.dialog)
 
@@ -128,7 +131,7 @@ async function remove() {
 
       <label class="ed__field">
         <span class="ed__label">日期</span>
-        <input v-model="form.date" class="ed__input" type="date" />
+        <DatePicker v-model="form.date" :week-starts-on="calendarStore.weekStartsOn" />
       </label>
 
       <label class="ed__field ed__field--row">
