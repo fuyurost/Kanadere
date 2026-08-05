@@ -62,6 +62,36 @@ select,
   -webkit-user-select: text;
 }
 
+/* ── MD3 涟漪（点击水波）：宿主需 relative + overflow hidden，内容层 z-index 1 ── */
+.settings__row:not(.settings__row--disabled),
+.dc,
+.dc__chip,
+.sidebar__event {
+  position: relative;
+  overflow: hidden;
+}
+.ripple__wave {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  transform: scale(0);
+  animation: ripple-wave 500ms var(--md-sys-motion-easing-standard) forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes ripple-wave {
+  from { transform: scale(0); opacity: 1; }
+  70% { transform: scale(1); opacity: 1; }
+  to { transform: scale(1); opacity: 0; } /* 末尾淡出，避免生硬消失 */
+}
+.settings__row-label,
+.settings__row-value,
+.sidebar__event-date,
+.sidebar__event-title {
+  position: relative;
+  z-index: 1;
+}
+
 /* ── MD3 风格滚动条（原生，无 JS overlay）── */
 * {
   scrollbar-width: thin;

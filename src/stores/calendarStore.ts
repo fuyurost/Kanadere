@@ -1,23 +1,116 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { ViewMode } from '../core/calendar/types'
+import { generateSchemeFromSeed } from '../core/color/scheme'
 
 export type AppView = 'month' | 'settings'
 export type Theme = 'dark' | 'light'
+export type ColorScheme = 'blue' | 'green' | 'purple' | 'orange' | 'dynamic'
 type NavDirection = 'forward' | 'backward'
 
+const PREFS_KEY = 'kanadere.preferences.v1'
+const COLOR_SCHEMES: ColorScheme[] = ['blue', 'green', 'purple', 'orange', 'dynamic']
+
+/** 动态取色时覆盖的 CSS 变量（与 tokens.css 静态方案同组） */
+const SCHEME_CSS_VARS = [
+  '--md-sys-color-primary',
+  '--md-sys-color-on-primary',
+  '--md-sys-color-primary-container',
+  '--md-sys-color-on-primary-container',
+  '--md-sys-color-inverse-primary',
+] as const
+
+interface Prefs {
+  theme: Theme
+  weekStartsOn: 0 | 1
+  colorScheme: ColorScheme
+  dynamicSeed: string | null
+}
+
+/** 读取持久化偏好（主题/周起始日/配色/动态种子色）；损坏或缺失降级为默认 */
+function loadPrefs(): Prefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<Prefs>
+      return {
+        theme: p.theme === 'light' ? 'light' : 'dark',
+        weekStartsOn: p.weekStartsOn === 0 ? 0 : 1,
+        colorScheme: COLOR_SCHEMES.includes(p.colorScheme as ColorScheme)
+          ? (p.colorScheme as ColorScheme)
+          : 'blue',
+        dynamicSeed:
+          typeof p.dynamicSeed === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.dynamicSeed)
+            ? p.dynamicSeed
+            : null,
+      }
+    }
+  } catch {
+    // 损坏数据降级
+  }
+  return { theme: 'dark', weekStartsOn: 1, colorScheme: 'blue', dynamicSeed: null }
+}
+
 export const useCalendarStore = defineStore('calendar', () => {
+  const prefs = loadPrefs()
   const currentView = ref<AppView>('month')
   const currentDate = ref(new Date())
   const selectedDate = ref<Date | null>(null)
-  const weekStartsOn = ref<0 | 1>(1)
-  const theme = ref<Theme>('dark')
+  const weekStartsOn = ref<0 | 1>(prefs.weekStartsOn)
+  const theme = ref<Theme>(prefs.theme)
+  const colorScheme = ref<ColorScheme>(prefs.colorScheme)
+  const dynamicSeed = ref<string | null>(prefs.dynamicSeed)
   const navDirection = ref<NavDirection>('forward')
   const viewMode = ref<ViewMode>('month')
+
+  /** 动态取色：seed → 当前主题色板 → 覆盖 CSS 变量；静态方案则清除覆盖 */
+  function applyDynamicScheme() {
+    const root = document.documentElement
+    if (colorScheme.value !== 'dynamic' || !dynamicSeed.value) {
+      for (const v of SCHEME_CSS_VARS) root.style.removeProperty(v)
+      return
+    }
+    const palette = generateSchemeFromSeed(dynamicSeed.value)[theme.value]
+    const entries = [
+      'primary',
+      'onPrimary',
+      'primaryContainer',
+      'onPrimaryContainer',
+      'inversePrimary',
+    ] as const
+    for (let i = 0; i < SCHEME_CSS_VARS.length; i++) {
+      root.style.setProperty(SCHEME_CSS_VARS[i]!, palette[entries[i]!])
+    }
+  }
 
   watch(theme, (t) => {
     document.documentElement.setAttribute('data-theme', t)
   }, { immediate: true })
+
+  watch(colorScheme, (s) => {
+    document.documentElement.setAttribute('data-scheme', s === 'dynamic' ? 'blue' : s)
+  }, { immediate: true })
+
+  watch(
+    [theme, colorScheme, dynamicSeed],
+    () => {
+      applyDynamicScheme()
+      try {
+        localStorage.setItem(
+          PREFS_KEY,
+          JSON.stringify({
+            theme: theme.value,
+            weekStartsOn: weekStartsOn.value,
+            colorScheme: colorScheme.value,
+            dynamicSeed: dynamicSeed.value,
+          }),
+        )
+      } catch {
+        // 存储不可用时仅影响本次会话
+      }
+    },
+    { immediate: true },
+  )
 
   function setViewMode(mode: ViewMode) {
     viewMode.value = mode
@@ -124,6 +217,16 @@ export const useCalendarStore = defineStore('calendar', () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
   }
 
+  function setColorScheme(scheme: ColorScheme) {
+    colorScheme.value = scheme
+  }
+
+  /** 动态取色：记录种子色并切换到 dynamic 方案 */
+  function setDynamicSeed(seedHex: string) {
+    dynamicSeed.value = seedHex
+    colorScheme.value = 'dynamic'
+  }
+
   /** 恢复全部默认状态（开发者调试/一键重置） */
   function reset() {
     currentView.value = 'month'
@@ -131,6 +234,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     selectedDate.value = null
     weekStartsOn.value = 1
     theme.value = 'dark'
+    colorScheme.value = 'blue'
+    dynamicSeed.value = null
     navDirection.value = 'forward'
     viewMode.value = 'month'
   }
@@ -141,6 +246,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     selectedDate,
     weekStartsOn,
     theme,
+    colorScheme,
+    dynamicSeed,
     navDirection,
     viewMode,
     reset,
@@ -154,5 +261,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     navigateSelection,
     toggleWeekStartsOn,
     toggleTheme,
+    setColorScheme,
+    setDynamicSeed,
   }
 })

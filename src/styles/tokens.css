@@ -136,3 +136,53 @@
   --md-sys-elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 2px 6px 2px rgba(0, 0, 0, 0.05);
   --md-sys-elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
+
+/* ════════════ 拓展配色方案（默认蓝色，data-scheme 切换） ════════════ */
+
+/* ── Green 绿（暗）── */
+:root[data-scheme="green"] {
+  --md-sys-color-primary: #8FD39B;
+  --md-sys-color-on-primary: #00391C;
+  --md-sys-color-primary-container: #165331;
+  --md-sys-color-on-primary-container: #B2F1BE;
+  --md-sys-color-inverse-primary: #2E7D4F;
+}
+[data-theme="light"][data-scheme="green"] {
+  --md-sys-color-primary: #2E7D4F;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #B2F1BE;
+  --md-sys-color-on-primary-container: #00210F;
+  --md-sys-color-inverse-primary: #8FD39B;
+}
+
+/* ── Purple 紫（暗）── */
+:root[data-scheme="purple"] {
+  --md-sys-color-primary: #D0BCFF;
+  --md-sys-color-on-primary: #381E72;
+  --md-sys-color-primary-container: #4F378B;
+  --md-sys-color-on-primary-container: #EADDFF;
+  --md-sys-color-inverse-primary: #6750A4;
+}
+[data-theme="light"][data-scheme="purple"] {
+  --md-sys-color-primary: #6750A4;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #EADDFF;
+  --md-sys-color-on-primary-container: #21005D;
+  --md-sys-color-inverse-primary: #D0BCFF;
+}
+
+/* ── Orange 橙（暗）── */
+:root[data-scheme="orange"] {
+  --md-sys-color-primary: #FFB77C;
+  --md-sys-color-on-primary: #4A2800;
+  --md-sys-color-primary-container: #6E3E00;
+  --md-sys-color-on-primary-container: #FFDCC2;
+  --md-sys-color-inverse-primary: #8F4C00;
+}
+[data-theme="light"][data-scheme="orange"] {
+  --md-sys-color-primary: #8F4C00;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #FFDCC2;
+  --md-sys-color-on-primary-container: #2E1600;
+  --md-sys-color-inverse-primary: #FFB77C;
+}

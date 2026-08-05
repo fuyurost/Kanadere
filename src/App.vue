@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useCalendarStore } from './stores/calendarStore'
 import { useDebugStore } from './stores/debugStore'
 import Sidebar from './components/Sidebar.vue'
@@ -20,6 +20,15 @@ const overlayOrigin = ref({ x: 0, y: 0 })
 const gearRef = ref<HTMLElement | null>(null)
 const open = computed(() => store.currentView === 'settings')
 const iconOpen = ref(false)
+
+// 任何绕过 closeSettings() 的视图切换（如一键重置）都会离开 settings，
+// 同步复位图标，避免齿轮↔X 卡在错误状态
+watch(
+  () => store.currentView,
+  (v) => {
+    if (v !== 'settings') iconOpen.value = false
+  },
+)
 
 function clickSettings() {
   if (open.value) {
