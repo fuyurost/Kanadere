@@ -110,8 +110,9 @@ function remove() {
 </script>
 
 <template>
-  <div v-if="dialog" class="ed" @keydown.esc="eventsStore.closeDialog()">
-    <div class="ed__scrim" @click="eventsStore.closeDialog()" />
+  <Transition name="ed">
+    <div v-if="dialog" class="ed" @keydown.esc="eventsStore.closeDialog()">
+      <div class="ed__scrim" @click="eventsStore.closeDialog()" />
     <div
       class="ed__card"
       role="dialog"
@@ -180,8 +181,9 @@ function remove() {
           <button class="ed__btn ed__btn--filled" @click="save">保存</button>
         </div>
       </footer>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -344,5 +346,27 @@ function remove() {
 }
 .ed__btn--delete:hover {
   background: color-mix(in srgb, var(--md-sys-color-error) 8%, transparent);
+}
+
+/* ── MD3 开合动画：scrim 淡入淡出 + 卡片缩放 ── */
+.ed-enter-active {
+  transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized-decelerate);
+}
+.ed-leave-active {
+  transition: opacity var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-emphasized-accelerate);
+}
+.ed-enter-from,
+.ed-leave-to {
+  opacity: 0;
+}
+.ed-enter-active .ed__card {
+  transition: transform var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate);
+}
+.ed-leave-active .ed__card {
+  transition: transform var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-emphasized-accelerate);
+}
+.ed-enter-from .ed__card,
+.ed-leave-to .ed__card {
+  transform: scale(0.9);
 }
 </style>
