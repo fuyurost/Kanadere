@@ -79,6 +79,10 @@ const label = computed(() => {
   transition: transform var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard),
               background var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
 }
+/* 平时方形网格（分隔线笔直）；涟漪出现期间圆角，扩散按圆角裁剪 */
+.dc:has(.ripple__wave) {
+  border-radius: var(--md-sys-shape-corner-sm);
+}
 .dc:active { transform: scale(0.97); }
 
 .dc::after {
@@ -113,6 +117,15 @@ const label = computed(() => {
 
 /* ── Number ── */
 .dc__top { display: flex; align-items: flex-start; }
+
+/* 内容层提升到 ::after 圆角块（hover/选中背景）之上，避免被遮挡 */
+.dc__top,
+.dc__label,
+.dc__events,
+.dc__add {
+  position: relative;
+  z-index: 1;
+}
 .dc__num {
   font: var(--md-sys-typescale-label-large);
   color: var(--md-sys-color-on-surface);
@@ -210,13 +223,17 @@ const label = computed(() => {
   color: var(--md-sys-color-on-tertiary);
 }
 
-/* ── Selected ── */
-.dc--selected { background: var(--md-sys-color-primary-container); }
+/* ── Selected：圆角块（复用 ::after 圆角机制，不整格铺色）── */
+.dc--selected::after { background: var(--md-sys-color-primary-container); }
 .dc--selected .dc__num {
   background: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
 }
 .dc--selected .dc__label { color: var(--md-sys-color-on-primary-container); }
+.dc--selected .dc__chip {
+  background: color-mix(in srgb, var(--md-sys-color-primary-container) 55%, var(--md-sys-color-surface-container-high));
+  color: var(--md-sys-color-on-surface);
+}
 
 /* ── Muted ── */
 .dc--muted { opacity: 0.28; cursor: pointer; }

@@ -3,10 +3,13 @@ import { createPinia } from 'pinia'
 import './styles/base.css'
 import App from './App.vue'
 import { useEventsStore } from './stores/eventsStore'
+import { initRipple } from './utils/ripple'
 
 async function bootstrap() {
   // 禁用右键浏览器菜单（桌面 WebView2 与浏览器一致，含触屏长按菜单）
   window.addEventListener('contextmenu', (e) => e.preventDefault())
+  // MD3 涟漪：设置行 / 日历 cell / 事件 chip / 侧边栏事件行
+  initRipple()
   const app = createApp(App)
   const pinia = createPinia()
   app.use(pinia)
