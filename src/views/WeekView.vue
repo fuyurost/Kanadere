@@ -5,8 +5,13 @@ import { useCalendar } from '../composables/useCalendar'
 import { generateWeekGrid } from '../core/calendar/engine'
 import { getHolidayData } from '../core/holiday/data'
 import { DayType } from '../core/holiday/types'
+import type { DateCell } from '../core/calendar/types'
+import { useEventsStore } from '../stores/eventsStore'
+import { dateToKey, layoutTimeBlocks } from '../core/events/engine'
+import type { EventOccurrence, TimeBlockLayout } from '../core/events/types'
 
 const { store } = useCalendar()
+const eventsStore = useEventsStore()
 const today = new Date()
 
 const grid = computed(() => {
@@ -38,6 +43,38 @@ const weekendCols = computed<Set<number>>(() =>
 
 const hours = Array.from({ length: 24 }, (_, h) => h)
 
+/** 是否有全天事件（决定全天行是否渲染） */
+const anyAllDay = computed(() =>
+  grid.value.days.some((d) =>
+    eventsStore.getEventsForDate(dateToKey(d.date)).some((o) => o.event.allDay),
+  ),
+)
+
+function alldayOccs(day: DateCell): EventOccurrence[] {
+  return eventsStore.getEventsForDate(dateToKey(day.date)).filter((o) => o.event.allDay)
+}
+
+function layout(day: DateCell): TimeBlockLayout[] {
+  return layoutTimeBlocks(eventsStore.getEventsForDate(dateToKey(day.date)))
+}
+
+function evtStyle(b: TimeBlockLayout) {
+  return {
+    top: `${b.topPercent}%`,
+    height: `${b.heightPercent}%`,
+    left: b.laneCount > 1 ? `calc(${(b.laneIndex / b.laneCount) * 100}% + 1px)` : '1px',
+    width: b.laneCount > 1 ? `calc(${100 / b.laneCount}% - 2px)` : 'calc(100% - 2px)',
+  }
+}
+
+/** 点击空白创建：按点击位置推算小时，选中该日并打开创建对话框 */
+function onAreaClick(day: DateCell, e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const hour = Math.min(23, Math.max(0, Math.floor(((e.clientY - rect.top) / rect.height) * 24)))
+  store.goToDate(day.date)
+  eventsStore.openCreate(dateToKey(day.date), `${String(hour).padStart(2, '0')}:00`)
+}
+
 function onKeydown(e: KeyboardEvent) {
   const map: Record<string, 'prevDay' | 'nextDay' | 'prevWeek' | 'nextWeek'> = {
     ArrowLeft:  'prevDay',
@@ -59,6 +96,7 @@ function onKeydown(e: KeyboardEvent) {
       <!-- 时间列 -->
       <div class="wv__time-col">
         <div class="wv__corner" />
+        <div v-if="anyAllDay" class="wv__allday-spacer" />
         <div
           v-for="h in hours"
           :key="h"
@@ -87,13 +125,28 @@ function onKeydown(e: KeyboardEvent) {
             <span v-if="day.holidayName" class="wv__holiday">{{ day.holidayName }}</span>
             <span v-else-if="day.dayType === DayType.AdjustedWorkday" class="wv__holiday wv__holiday--adj">班</span>
           </div>
-          <div
-            v-for="h in hours"
-            :key="h"
-            class="wv__cell"
-            :class="{ 'wv__cell--now': isSameDay(day.date, today) && h === today.getHours() }"
-          >
-            <!-- 事件占位：Phase 3 -->
+          <div v-if="anyAllDay" class="wv__allday">
+            <div
+              v-for="occ in alldayOccs(day)"
+              :key="occ.event.id"
+              class="wv__chip"
+              @click.stop="eventsStore.openEdit(occ.event.id)"
+            >{{ occ.event.title }}</div>
+          </div>
+          <div class="wv__time-area" @click="onAreaClick(day, $event)">
+            <div
+              v-for="h in hours"
+              :key="h"
+              class="wv__cell"
+              :class="{ 'wv__cell--now': isSameDay(day.date, today) && h === today.getHours() }"
+            />
+            <div
+              v-for="b in layout(day)"
+              :key="b.occurrence.event.id"
+              class="wv__evt"
+              :style="evtStyle(b)"
+              @click.stop="eventsStore.openEdit(b.occurrence.event.id)"
+            >{{ b.occurrence.event.startTime }} {{ b.occurrence.event.title }}</div>
           </div>
         </div>
       </div>
@@ -218,6 +271,50 @@ function onKeydown(e: KeyboardEvent) {
 .wv__cell--now {
   background: var(--md-sys-color-primary-container);
   opacity: 0.35;
+}
+
+/* ── 全天事件行 ── */
+.wv__allday-spacer {
+  height: 28px;
+}
+.wv__allday {
+  height: 28px;
+  display: flex;
+  gap: 2px;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  overflow: hidden;
+}
+.wv__chip {
+  flex-shrink: 1;
+  min-width: 0;
+  font: var(--md-sys-typescale-label-small);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-sm);
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* ── 时间段事件层 ── */
+.wv__time-area {
+  position: relative;
+}
+.wv__evt {
+  position: absolute;
+  z-index: 1;
+  font: var(--md-sys-typescale-label-small);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-xs);
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
 /* ── 底部范围条 ── */

@@ -5,8 +5,12 @@ import { useCalendar } from '../composables/useCalendar'
 import { generateDayCell } from '../core/calendar/engine'
 import { getHolidayData } from '../core/holiday/data'
 import { DayType } from '../core/holiday/types'
+import { useEventsStore } from '../stores/eventsStore'
+import { dateToKey, layoutTimeBlocks } from '../core/events/engine'
+import type { TimeBlockLayout } from '../core/events/types'
 
 const { store } = useCalendar()
+const eventsStore = useEventsStore()
 const today = new Date()
 
 const day = computed(() => {
@@ -18,6 +22,33 @@ const weekdayNames = ['日', '一', '二', '三', '四', '五', '六']
 const weekday = computed(() => weekdayNames[day.value.cell.date.getDay()]!)
 
 const hours = Array.from({ length: 24 }, (_, h) => h)
+
+/** 是否有全天事件（决定全天条是否渲染） */
+const anyAllDay = computed(() =>
+  eventsStore.getEventsForDate(dateToKey(day.value.cell.date)).some((o) => o.event.allDay),
+)
+const alldayOccs = computed(() =>
+  eventsStore.getEventsForDate(dateToKey(day.value.cell.date)).filter((o) => o.event.allDay),
+)
+const layout = computed<TimeBlockLayout[]>(() =>
+  layoutTimeBlocks(eventsStore.getEventsForDate(dateToKey(day.value.cell.date))),
+)
+
+function evtStyle(b: TimeBlockLayout) {
+  return {
+    top: `${b.topPercent}%`,
+    height: `${b.heightPercent}%`,
+    left: b.laneCount > 1 ? `calc(${(b.laneIndex / b.laneCount) * 100}% + 1px)` : '1px',
+    width: b.laneCount > 1 ? `calc(${100 / b.laneCount}% - 2px)` : 'calc(100% - 2px)',
+  }
+}
+
+/** 点击空白创建：按点击位置推算小时（日视图当前日期即 currentDate，无需跳转） */
+function onAreaClick(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const hour = Math.min(23, Math.max(0, Math.floor(((e.clientY - rect.top) / rect.height) * 24)))
+  eventsStore.openCreate(dateToKey(day.value.cell.date), `${String(hour).padStart(2, '0')}:00`)
+}
 
 function onKeydown(e: KeyboardEvent) {
   const map: Record<string, 'prevDay' | 'nextDay' | 'prevWeek' | 'nextWeek'> = {
@@ -52,6 +83,15 @@ function onKeydown(e: KeyboardEvent) {
       >调休上班</span>
     </header>
 
+    <div v-if="anyAllDay" class="dv__allday">
+      <div
+        v-for="occ in alldayOccs"
+        :key="occ.event.id"
+        class="dv__chip"
+        @click.stop="eventsStore.openEdit(occ.event.id)"
+      >{{ occ.event.title }}</div>
+    </div>
+
     <div class="dv__body">
       <div class="dv__time-col">
         <div
@@ -62,13 +102,20 @@ function onKeydown(e: KeyboardEvent) {
         >{{ h }}:00</div>
       </div>
       <div class="dv__hours">
-        <div
-          v-for="h in hours"
-          :key="h"
-          class="dv__cell"
-          :class="{ 'dv__cell--now': h === today.getHours() }"
-        >
-          <!-- 事件占位：Phase 3 -->
+        <div class="dv__time-area" @click="onAreaClick">
+          <div
+            v-for="h in hours"
+            :key="h"
+            class="dv__cell"
+            :class="{ 'dv__cell--now': h === today.getHours() }"
+          />
+          <div
+            v-for="b in layout"
+            :key="b.occurrence.event.id"
+            class="dv__evt"
+            :style="evtStyle(b)"
+            @click.stop="eventsStore.openEdit(b.occurrence.event.id)"
+          >{{ b.occurrence.event.startTime }} {{ b.occurrence.event.title }}</div>
         </div>
       </div>
     </div>
@@ -161,5 +208,47 @@ function onKeydown(e: KeyboardEvent) {
 .dv__cell--now {
   background: var(--md-sys-color-primary-container);
   opacity: 0.35;
+}
+
+/* ── 全天事件条（在 body 外，不破坏时间列对齐）── */
+.dv__allday {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px 4px;
+  min-height: 28px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  margin: 12px 12px 0;
+}
+.dv__chip {
+  flex-shrink: 1;
+  min-width: 0;
+  font: var(--md-sys-typescale-label-small);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-sm);
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* ── 时间段事件层 ── */
+.dv__time-area {
+  position: relative;
+}
+.dv__evt {
+  position: absolute;
+  z-index: 1;
+  font: var(--md-sys-typescale-label-small);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-xs);
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 </style>
