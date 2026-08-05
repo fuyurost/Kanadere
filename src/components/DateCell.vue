@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import type { DateCell } from '../core/calendar/types'
 import { DayType } from '../core/holiday/types'
+import { useCalendarStore } from '../stores/calendarStore'
+import { useEventsStore } from '../stores/eventsStore'
+import { dateToKey } from '../core/events/engine'
 
 const props = defineProps<{
   cell: DateCell
@@ -10,6 +13,16 @@ const props = defineProps<{
   isWeekendCol?: boolean
 }>()
 const emit = defineEmits<{ select: [date: Date] }>()
+
+const calendarStore = useCalendarStore()
+const eventsStore = useEventsStore()
+
+const occs = computed(() => eventsStore.getEventsForDate(dateToKey(props.cell.date)))
+
+function onAdd() {
+  calendarStore.selectDate(props.cell.date)
+  eventsStore.openCreate(dateToKey(props.cell.date))
+}
 
 const cellState = computed(() => {
   const c = props.cell
@@ -32,11 +45,23 @@ const label = computed(() => {
   <div
     :class="['dc', `dc--${cellState}`, { 'dc--wkcol': isWeekendCol && cell.isCurrentMonth && cellState !== 'selected' }]"
     @click="emit('select', cell.date)"
+    @dblclick.stop="onAdd"
   >
     <div class="dc__top">
       <span :class="['dc__num', { 'dc__num--badge': isToday || isSelected }]">{{ cell.date.getDate() }}</span>
     </div>
+    <button class="dc__add" aria-label="添加事件" @click.stop="onAdd">+</button>
     <span v-if="label" :class="['dc__label', { 'dc__label--holiday': cell.dayType === DayType.Holiday }]">{{ label }}</span>
+    <div class="dc__events">
+      <div
+        v-for="occ in occs.slice(0, 2)"
+        :key="occ.event.id"
+        class="dc__chip"
+        @click.stop="eventsStore.openEdit(occ.event.id)"
+        @dblclick.stop
+      >{{ occ.event.allDay ? occ.event.title : `${occ.event.startTime} ${occ.event.title}` }}</div>
+      <div v-if="occs.length > 2" class="dc__more">+{{ occs.length - 2 }}</div>
+    </div>
   </div>
 </template>
 
@@ -109,6 +134,51 @@ const label = computed(() => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .dc__label--holiday { color: var(--md-sys-color-error); }
+
+/* ── Events ── */
+.dc__events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  padding-left: 6px;
+}
+.dc__chip {
+  font: var(--md-sys-typescale-label-small);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-radius: var(--md-sys-shape-corner-sm);
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.dc__more {
+  font: var(--md-sys-typescale-label-small);
+  color: var(--md-sys-color-on-surface-variant);
+  padding-left: 6px;
+}
+
+/* ── 创建入口（hover 出现）── */
+.dc__add {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: var(--md-sys-shape-corner-full);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+}
+.dc:hover .dc__add { opacity: 1; }
 
 /* ── Weekend column base ── */
 .dc--wkcol { background: var(--md-sys-color-surface-container-lowest); }
