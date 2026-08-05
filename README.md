@@ -12,10 +12,11 @@
 - **键盘导航**：← → ↑ ↓，跨月自动跟随（主视图与侧边栏迷你日历同步）
 - **周末起始日可配置**：周一 / 周日
 - **事件系统**：创建/编辑/删除、全天/时间段、每日/每周/每月/每年重复、localStorage 持久化、月/周/日三视图渲染、侧边栏近期事件、迷你日历事件点
+- **桌面端打包**：Tauri 2 构建 Windows exe + NSIS/MSI 安装包（GitHub Actions 自动构建，dist/exe 均作为 artifact 产出）
 
 ## 技术栈
 
-Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Material Design 3
+Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Tauri 2 · Material Design 3
 
 ## 快速开始
 
@@ -24,6 +25,7 @@ npm install       # 安装依赖
 npm run dev       # 开发服务器
 npm test          # 运行测试（53 个单测）
 npm run build     # 生产构建（vue-tsc 类型检查 + vite build）
+npm run tauri build  # 打包 Windows 桌面应用（需 Rust；exe 在 src-tauri/target/release/）
 npm run preview   # 预览构建产物
 ```
 
@@ -39,6 +41,8 @@ src/
 ├── components/    # 日历网格、日期单元格、导航栏、视图切换、事件对话框等
 ├── views/         # 月/周/日视图 + 设置页
 └── styles/        # MD3 暗/亮双主题 Design Tokens
+src-tauri/         # Tauri 2 桌面壳（Rust + 打包配置）
+.github/workflows/ # GitHub Actions：单测 + vite 构建 + Tauri exe 自动构建
 ```
 
 新增年份数据：在 `src/core/holiday/data/` 添加 `202X.ts` 并在 `index.ts` 注册。
@@ -47,7 +51,8 @@ src/
 
 - [ ] 移动端 swipe 手势
 - [x] 事件系统（创建/编辑/重复事件）
-- [ ] 桌面端打包（Tauri）、PWA、iCal 导入导出
+- [x] 桌面端打包（Tauri：Windows exe 自动构建）
+- [ ] PWA、iCal 导入导出
 
 ## 许可
 

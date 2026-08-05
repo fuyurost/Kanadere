@@ -12,6 +12,7 @@
 - 月切换 shared axis 滑动动画，视图切换 scale+fade 快速动画
 - 离月时右下角 FAB 快捷回今天
 - 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）、localStorage 持久化
+- Tauri 2 桌面打包：Windows exe + NSIS/MSI 安装包，GitHub Actions 自动构建
 - 后续：swipe 手势、云同步
 
 ## Tech Stack
@@ -27,6 +28,8 @@
 | Transitions | Vue `<Transition>` | view 切换（scale+fade）+ shared axis 月滑动 + icon crossfade |
 | Animations | CSS clip-path + transform + border-radius | 设置页 container transform、FAB scale、cell press、shape morph |
 | Dates | date-fns | 纯函数、tree-shakeable |
+| Desktop | Tauri 2 | `src-tauri/`，Rust 壳 + WebView2，NSIS/MSI 打包 |
+| CI | GitHub Actions | ubuntu: test+vite dist；windows: Tauri exe + 安装包，均上传 artifact |
 | Testing | Vitest | 测试文件：`src/**/*.test.ts` |
 | Language | TypeScript (strict) | |
 
@@ -112,9 +115,15 @@ src/
 │   └── SettingsView.vue           # 设置页（无关闭按钮，走 App.vue 独立按钮）
 ├── styles/
 │   ├── tokens.css                # MD3 暗/亮双主题 Design Tokens
-│   └── base.css                  # CSS reset + 全局基础
+│   └── base.css                  # CSS reset + 全局基础（含 MD3 滚动条）
 ├── App.vue                       # 固定导航层 + 内容切换 + 独立设置按钮 + overlay (clip-path)
 └── main.ts                       # createApp + createPinia
+src-tauri/                        # Tauri 2 桌面壳
+├── Cargo.toml / build.rs / tauri.conf.json
+├── capabilities/default.json
+├── icons/                        # 由 app-icon.png 生成（`tauri icon`）
+└── src/main.rs + lib.rs
+.github/workflows/build.yml       # test + vite dist + Tauri windows exe（artifact）
 ```
 
 ## Key Design Decisions
@@ -265,6 +274,9 @@ resolveDayType(date, data):
 | 侧边栏近期事件 | 未来 60 天取前 5 条，点击跳转主视图对应日期 |
 | 迷你日历事件点 | 有事件日期显示 4px 圆点（currentColor 自适应配色） |
 | MD3 滚动条 | 全局 8px 圆角细滚动条（WebKit + Firefox `scrollbar-color`） |
+| Tauri 桌面壳 | `src-tauri/`：tauri.conf.json + capabilities + 生成图标集（`tauri icon`） |
+| Tauri 打包 | `npm run tauri build` → `kanadere.exe` + NSIS/MSI 安装包 |
+| CI exe 构建 | Actions `tauri` job（windows-latest）：npm ci → rust 构建 → 上传 `kanadere-windows-exe` |
 | 53 单测 | holiday 7 + calendar 16 + events 30 |
 
 ## Commands
@@ -313,6 +325,9 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] 周/日视图时间块 + 全天槽 + 点击空白按小时创建
 - [x] 侧边栏近期事件列表 + 迷你日历事件点
 - [x] MD3 风格全局滚动条
+- [x] Tauri 2 桌面壳（src-tauri + 图标 + capabilities）
+- [x] Actions tauri job：Windows exe + NSIS/MSI 自动构建（artifact）
+- [x] 本地 `npm run tauri build` 全链路验证
 
 ## Up Next
 
@@ -320,9 +335,8 @@ npx vue-tsc --noEmit  # 类型检查
 
 - [ ] Swipe gestures (mobile)
 
-### Phase 4 — Packaging
+### Phase 4 — Packaging (剩余)
 
-- [ ] Tauri desktop
 - [ ] PWA
 - [ ] iCal import/export
 
