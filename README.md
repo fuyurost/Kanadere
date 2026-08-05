@@ -16,6 +16,8 @@
 - **开发者调试选项**：设置页开发者分区——开发水印（版本号 + 开发中提示，可持久化开关）、清除事件、一键重置（二次点击确认防误触）
 - **桌面端打包**：Tauri 2 构建 Windows exe + NSIS/MSI 安装包（GitHub Actions 自动构建，dist/exe 均作为 artifact 产出）
 - **移动端手势**：月/周/日视图左右滑动切换（复用模式感知导航与月滑动动画）
+- **iCal 导入导出**：设置页「数据」分区——全部事件导出为 `.ics`（RFC 5545，全天/时间段/重复规则齐全），从 `.ics` 合并导入（重复项与无效事件自动跳过）；Web 端 Blob 下载 + 文件选择，桌面端原生保存/打开对话框（tauri-plugin-dialog + tauri-plugin-fs，按选中路径动态授权最小权限）
+- **PWA 支持**：Web 端可安装（manifest + service worker 预缓存 + 192/512 应用图标），`registerType: 'autoUpdate'` 更新即生效，离线可访问（图标来自 `src-tauri/app-icon.png`，后续可替换 `public/pwa-*.png`）
 
 ## 技术栈
 
@@ -26,7 +28,7 @@ Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Tauri 2
 ```bash
 npm install       # 安装依赖
 npm run dev       # 开发服务器
-npm test          # 运行测试（66 个单测）
+npm test          # 运行测试（88 个单测）
 npm run build     # 生产构建（vue-tsc 类型检查 + vite build）
 npm run tauri build  # 打包 Windows 桌面应用（需 Rust；exe 在 src-tauri/target/release/）
 npm run preview   # 预览构建产物
@@ -56,7 +58,7 @@ src-tauri/         # Tauri 2 桌面壳（Rust + 打包配置）
 - [x] 移动端 swipe 手势
 - [x] 事件系统（创建/编辑/重复事件）
 - [x] 桌面端打包（Tauri：Windows exe 自动构建）
-- [ ] PWA、iCal 导入导出
+- [x] PWA、[x] iCal 导入导出
 
 ## 许可
 

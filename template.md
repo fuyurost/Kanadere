@@ -96,7 +96,9 @@ src/
 │   └── events/
 │       ├── types.ts              # CalendarEvent, RecurrenceRule, EventOccurrence, TimeBlockLayout
 │       ├── engine.ts             # 重复展开 / getEventsInRange / validateEvent / layoutTimeBlocks
-│       └── engine.test.ts
+│       ├── engine.test.ts
+│       ├── ical.ts               # iCal (RFC 5545) 导入导出：generateICal / parseICal
+│       └── ical.test.ts
 ├── stores/
 │   ├── calendarStore.ts          # currentView / viewMode / theme / weekStartsOn / navDirection / 模式感知导航 (goNext/goPrev)
 │   └── eventsStore.ts            # 事件 CRUD + localStorage 持久化 (kanadere.events.v1) + dialog 状态
@@ -284,7 +286,9 @@ resolveDayType(date, data):
 | 事件存储抽象 | `core/events/storage.ts` `EventStorage` 异步接口；`src/platform/`：localStorage 适配器（Web）+ tauri-plugin-store 适配器（桌面 events.json，自动迁移旧数据）；eventsStore 异步 init，main.ts 启动前加载 |
 | 窄视口响应式 | `<600px` 折叠侧边栏（MD3 compact 断点）；DateCell 事件 chip `min-width:0` + ellipsis 防溢出 |
 | 开发者调试 | 设置页开发者分区：开发水印（版本号 `__APP_VERSION__` + 开发中提示，持久化开关）、清除事件、一键重置（二次点击确认，恢复全部默认） |
-| 66 单测 | holiday 7 + calendar 23 + events 30 + storage 6 |
+| 88 单测 | holiday 7 + calendar 23 + events 30 + ical 22 + storage 6 |
+| iCal 导入导出 | `core/events/ical.ts`：generateICal（RFC 5545 VCALENDAR 2.0，CRLF + 75 字符行折叠，全天 VALUE=DATE + DTEND 次日，非全天浮动 DATE-TIME，RRULE FREQ/INTERVAL/UNTIL）+ parseICal（大小写不敏感、折叠/CRLF 容错、RRULE→RecurrenceRule、validateEvent 过滤，不抛异常）；设置页「数据」分区：Web Blob 下载 + 文件选择，Tauri 原生对话框（tauri-plugin-dialog + tauri-plugin-fs，dialog:allow-open/save + fs:allow-read/write-text-file 最小权限，选中路径由 dialog 动态加入 fs scope）；导入去重（title/date/allDay/startTime 全同跳过）+ 结果提示弹窗 |
+| PWA | `vite-plugin-pwa`：manifest（`#A8C7FA` theme / `#111318` background，zh-CN，standalone，portrait）+ workbox 预缓存 + navigateFallback，192/512 应用图标（源自 `src-tauri/app-icon.png`），autoUpdate 更新即生效 |
 
 ## Commands
 
@@ -339,13 +343,14 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] 事件存储抽象与桌面迁移（EventStorage + tauri-plugin-store + 旧数据迁移）
 - [x] 窄视口响应式（<600px 折叠侧边栏，chip 防溢出）
 - [x] 开发者调试选项（水印 / 清除事件 / 一键重置，二次确认）
+- [x] iCal 导入导出（core/events/ical.ts + 设置页「数据」分区，Web/Tauri 双端，22 单测）
+- [x] PWA（manifest + service worker 预缓存 + 192/512 应用图标，autoUpdate）
 
 ## Up Next
 
 ### Phase 4 — Packaging (剩余)
 
-- [ ] PWA
-- [ ] iCal import/export
+- [ ] 云同步
 
 ## Notes for Future Agents
 
