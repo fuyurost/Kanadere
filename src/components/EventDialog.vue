@@ -71,7 +71,7 @@ watch(
   },
 )
 
-function save() {
+async function save() {
   const d = eventsStore.dialog
   if (d === null) return
   const draft: EventDraft = {
@@ -94,16 +94,16 @@ function save() {
     error.value = errors[0]!
     return
   }
-  if (d.mode === 'create') eventsStore.createEvent(draft)
-  else eventsStore.updateEvent(d.id, draft)
+  if (d.mode === 'create') await eventsStore.createEvent(draft)
+  else await eventsStore.updateEvent(d.id, draft)
   eventsStore.closeDialog()
 }
 
-function remove() {
+async function remove() {
   const d = eventsStore.dialog
   if (d?.mode !== 'edit') return
   if (confirm('确定删除该事件？')) {
-    eventsStore.deleteEvent(d.id)
+    await eventsStore.deleteEvent(d.id)
     eventsStore.closeDialog()
   }
 }
