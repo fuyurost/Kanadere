@@ -11,7 +11,9 @@
 - 设置页 container transform 动画（齿轮 📍 → 全屏展开）
 - 月切换 shared axis 滑动动画，视图切换 scale+fade 快速动画
 - 离月时右下角 FAB 快捷回今天
-- 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）、localStorage 持久化
+- 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）
+- 跨平台事件存储：`core/events/storage.ts` 定义 `EventStorage` 接口，`src/platform/` 提供 localStorage（Web）与 tauri-plugin-store（桌面 events.json）适配器，桌面端自动迁移旧 localStorage 数据
+- 开发者调试：设置页开发者分区（开发水印 / 清除事件 / 一键重置，二次点击确认）
 - Tauri 2 桌面打包：Windows exe + NSIS/MSI 安装包，GitHub Actions 自动构建
 - 移动端 swipe 手势：月/周/日视图左右滑动切换（复用模式感知导航）
 - 后续：云同步
@@ -279,7 +281,10 @@ resolveDayType(date, data):
 | Tauri 打包 | `npm run tauri build` → `kanadere.exe` + NSIS/MSI 安装包 |
 | CI exe 构建 | Actions `tauri` job（windows-latest）：npm ci → rust 构建 → 上传 `kanadere-windows-exe` |
 | 移动端 swipe 手势 | 月/周/日视图 touch 左右滑动切换（`useSwipeNavigation` + 模式感知 goNext/goPrev，复用月滑动动画） |
-| 60 单测 | holiday 7 + calendar 23 + events 30 |
+| 事件存储抽象 | `core/events/storage.ts` `EventStorage` 异步接口；`src/platform/`：localStorage 适配器（Web）+ tauri-plugin-store 适配器（桌面 events.json，自动迁移旧数据）；eventsStore 异步 init，main.ts 启动前加载 |
+| 窄视口响应式 | `<600px` 折叠侧边栏（MD3 compact 断点）；DateCell 事件 chip `min-width:0` + ellipsis 防溢出 |
+| 开发者调试 | 设置页开发者分区：开发水印（版本号 `__APP_VERSION__` + 开发中提示，持久化开关）、清除事件、一键重置（二次点击确认，恢复全部默认） |
+| 66 单测 | holiday 7 + calendar 23 + events 30 + storage 6 |
 
 ## Commands
 
@@ -331,6 +336,9 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] Actions tauri job：Windows exe + NSIS/MSI 自动构建（artifact）
 - [x] 本地 `npm run tauri build` 全链路验证
 - [x] 移动端 swipe 手势（月/周/日视图 touch 导航，`useSwipeNavigation`）
+- [x] 事件存储抽象与桌面迁移（EventStorage + tauri-plugin-store + 旧数据迁移）
+- [x] 窄视口响应式（<600px 折叠侧边栏，chip 防溢出）
+- [x] 开发者调试选项（水印 / 清除事件 / 一键重置，二次确认）
 
 ## Up Next
 
@@ -341,7 +349,12 @@ npx vue-tsc --noEmit  # 类型检查
 
 ## Notes for Future Agents
 
-- Core (`src/core/`) MUST remain framework-agnostic — no Vue/Pinia imports.
+- Core (`src/core/`) MUST remain framework-agnostic — no Vue/Pinia imports. Storage abstraction: `EventStorage` interface lives in core (async, platform-neutral), concrete adapters live in `src/platform/` (localStorage / tauri-plugin-store). Future Flutter/Kotlin/Swift ports implement the same interface — never put platform storage calls in core or stores.
+- Events load async via `eventsStore.init()` (resolved in main.ts before mount). All mutators (`createEvent`/`updateEvent`/`deleteEvent`/`clearEvents`) await init internally — never assume sync state.
+- Tauri detection: `'__TAURI_INTERNALS__' in window`; tauri adapter is dynamic-imported so web builds stay free of plugin code.
+- Desktop events live in `appDataDir/events.json` (`tauri-plugin-store`, autoSave). First load migrates legacy `kanadere.events.v1` localStorage once. Web keeps using the localStorage key.
+- Debug options: `debugStore` persists `kanadere.debug.v1` (showWatermark). Destructive actions (clear/reset) use two-click arming (`confirmTarget` + 3s timer), NOT `window.confirm` — WebView2's native dialog is unreliable.
+- Settings page has no close button — App.vue's standalone gear button toggles it; overlay covers mounted views (never unmount views on settings toggle).
 - Pinia is SSOT. Components derive via composables.
 - New year data: add `data/202X.ts` + register in `data/index.ts`.
 - **MD3 tokens** (`src/styles/tokens.css`) are the design authority. Never hardcode colors.

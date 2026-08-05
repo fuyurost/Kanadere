@@ -120,4 +120,9 @@ function formatDate(key: string): string {
 
 .sidebar__spacer { flex: 1; }
 
+/* ── 移动端/窄视口：折叠侧边栏，主视图占满（MD3 compact 断点）── */
+@media (max-width: 600px) {
+  .sidebar { display: none; }
+}
+
 </style>

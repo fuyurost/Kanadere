@@ -7,51 +7,72 @@ import {
   getUpcomingEvents as engineGetUpcomingEvents,
   validateEvent,
 } from '../core/events/engine'
-
-const STORAGE_KEY = 'kanadere.events.v1'
+import type { EventStorage } from '../core/events/storage'
+import { resolveEventStorage } from '../platform'
 
 export type EventDialogState =
   | { mode: 'create'; date: string; time?: string }
   | { mode: 'edit'; id: string }
   | null
 
-function loadEvents(): CalendarEvent[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') as CalendarEvent[]
-  } catch {
-    return [] // 损坏数据静默降级为空，不崩溃
-  }
-}
-
 export const useEventsStore = defineStore('events', () => {
-  const events = ref<CalendarEvent[]>(loadEvents())
+  const events = ref<CalendarEvent[]>([])
   const dialog = ref<EventDialogState>(null)
 
-  function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events.value))
+  let storage: EventStorage | null = null
+  let readyPromise: Promise<void> | null = null
+
+  /** 解析平台存储并加载事件；幂等，可被 main.ts 提前调用 */
+  async function init(): Promise<void> {
+    if (!readyPromise) {
+      readyPromise = (async () => {
+        storage = await resolveEventStorage()
+        try {
+          events.value = await storage.load()
+        } catch {
+          events.value = [] // 存储不可用时降级为内存态，不阻塞启动
+        }
+      })()
+    }
+    return readyPromise
   }
 
-  function createEvent(draft: EventDraft): CalendarEvent {
+  async function persist() {
+    await init()
+    await storage!.save(events.value)
+  }
+
+  async function createEvent(draft: EventDraft): Promise<CalendarEvent> {
+    await init()
     const errors = validateEvent(draft)
     if (errors.length > 0) throw new Error(errors[0])
     const event: CalendarEvent = { ...draft, id: crypto.randomUUID() }
     events.value.push(event)
-    persist()
+    await persist()
     return event
   }
 
-  function updateEvent(id: string, draft: EventDraft): void {
+  async function updateEvent(id: string, draft: EventDraft): Promise<void> {
+    await init()
     const event = events.value.find((e) => e.id === id)
     if (!event) throw new Error('事件不存在')
     const errors = validateEvent(draft)
     if (errors.length > 0) throw new Error(errors[0])
     Object.assign(event, draft)
-    persist()
+    await persist()
   }
 
-  function deleteEvent(id: string): void {
+  async function deleteEvent(id: string): Promise<void> {
+    await init()
     events.value = events.value.filter((e) => e.id !== id)
-    persist()
+    await persist()
+  }
+
+  /** 清除全部事件（开发者调试/一键重置） */
+  async function clearEvents(): Promise<void> {
+    await init()
+    events.value = []
+    await persist()
   }
 
   function getEventsForDate(dateKey: string): EventOccurrence[] {
@@ -79,11 +100,13 @@ export const useEventsStore = defineStore('events', () => {
   }
 
   return {
+    init,
     events,
     dialog,
     createEvent,
     updateEvent,
     deleteEvent,
+    clearEvents,
     getEventsForDate,
     getEventsInRange,
     getUpcoming,
