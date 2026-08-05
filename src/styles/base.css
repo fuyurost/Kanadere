@@ -38,3 +38,26 @@ input {
   outline: 2px solid var(--md-sys-color-primary);
   outline-offset: 2px;
 }
+
+/* ── MD3 风格滚动条（原生，无 JS overlay）── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 38%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 38%, transparent);
+  border-radius: var(--md-sys-shape-corner-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 60%, transparent);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
