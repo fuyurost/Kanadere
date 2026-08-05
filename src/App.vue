@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCalendarStore } from './stores/calendarStore'
+import { useDebugStore } from './stores/debugStore'
 import Sidebar from './components/Sidebar.vue'
 import ViewNavigator from './components/ViewNavigator.vue'
 import ViewModeTabs from './components/ViewModeTabs.vue'
@@ -12,6 +13,8 @@ import SettingsView from './views/SettingsView.vue'
 import EventDialog from './components/EventDialog.vue'
 
 const store = useCalendarStore()
+const debugStore = useDebugStore()
+const appVersion = __APP_VERSION__
 const transitionName = ref('view')
 const overlayOrigin = ref({ x: 0, y: 0 })
 const gearRef = ref<HTMLElement | null>(null)
@@ -120,6 +123,11 @@ const activeView = computed(() => {
 
     <!-- 事件创建/编辑对话框（z-index 1100，覆盖设置层） -->
     <EventDialog />
+
+    <!-- 开发水印（调试选项开启时显示） -->
+    <div v-if="debugStore.showWatermark" class="dev-watermark">
+      Kanadere v{{ appVersion }} · 开发中界面，不代表最终功能形态
+    </div>
   </div>
 </template>
 
@@ -140,6 +148,20 @@ const activeView = computed(() => {
 .view-leave-to {
   opacity: 0;
   transform: scale(1.01) translateY(-2px);
+}
+
+/* ── 开发水印 ── */
+.dev-watermark {
+  position: fixed;
+  right: 10px;
+  bottom: 8px;
+  z-index: 1200;
+  font: var(--md-sys-typescale-label-small);
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
 }
 </style>
 

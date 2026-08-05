@@ -124,6 +124,17 @@ export const useCalendarStore = defineStore('calendar', () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
   }
 
+  /** 恢复全部默认状态（开发者调试/一键重置） */
+  function reset() {
+    currentView.value = 'month'
+    currentDate.value = new Date()
+    selectedDate.value = null
+    weekStartsOn.value = 1
+    theme.value = 'dark'
+    navDirection.value = 'forward'
+    viewMode.value = 'month'
+  }
+
   return {
     currentView,
     currentDate,
@@ -132,6 +143,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     theme,
     navDirection,
     viewMode,
+    reset,
     setViewMode,
     goNext,
     goPrev,
