@@ -5,6 +5,8 @@ import App from './App.vue'
 import { useEventsStore } from './stores/eventsStore'
 
 async function bootstrap() {
+  // 禁用右键浏览器菜单（桌面 WebView2 与浏览器一致，含触屏长按菜单）
+  window.addEventListener('contextmenu', (e) => e.preventDefault())
   const app = createApp(App)
   const pinia = createPinia()
   app.use(pinia)

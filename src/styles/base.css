@@ -39,6 +39,29 @@ input {
   outline-offset: 2px;
 }
 
+/* ── 桌面/移动 UI：默认禁止文本选中（防误框选、防误复制界面元素）──
+   输入控件与说明性文本保留可选中/可复制 */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.settings__about,
+.settings__row-hint,
+.settings__dev-hint,
+.ed__error,
+.ed__hint,
+.sidebar__empty {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* ── MD3 风格滚动条（原生，无 JS overlay）── */
 * {
   scrollbar-width: thin;
