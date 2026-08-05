@@ -4,12 +4,15 @@ import { isSameDay } from 'date-fns'
 import { DayType } from '../core/holiday/types'
 import { useMiniCalendar } from '../composables/useCalendar'
 import { useCalendarStore } from '../stores/calendarStore'
+import { useEventsStore } from '../stores/eventsStore'
+import { dateToKey } from '../core/events/engine'
 
 const props = defineProps<{
   weekStartsOn: 0 | 1
 }>()
 
 const store = useCalendarStore()
+const eventsStore = useEventsStore()
 const today = new Date()
 
 const miniDate = ref(new Date())
@@ -46,6 +49,10 @@ watch(
 function pickDate(date: Date) {
   store.goToDate(date)
 }
+
+function hasEvents(date: Date): boolean {
+  return eventsStore.getEventsForDate(dateToKey(date)).length > 0
+}
 </script>
 
 <template>
@@ -72,7 +79,8 @@ function pickDate(date: Date) {
         }"
         @click="pickDate(cell.date)"
       >
-        {{ cell.date.getDate() }}
+        <span>{{ cell.date.getDate() }}</span>
+        <span v-if="cell.isCurrentMonth && hasEvents(cell.date)" class="mini-cal__dot" />
       </div>
     </div>
   </div>
@@ -133,8 +141,10 @@ function pickDate(date: Date) {
 
 .mini-cal__cell {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   height: 30px;
   font: var(--md-sys-typescale-label-small);
   color: var(--md-sys-color-on-surface);
@@ -143,6 +153,13 @@ function pickDate(date: Date) {
   transition:
     background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard),
     color var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+}
+.mini-cal__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: currentColor;
+  opacity: 0.9;
 }
 .mini-cal__cell:hover {
   background: rgba(128, 128, 128, 0.10);

@@ -5,13 +5,14 @@
 现代化日历应用，核心特色是**中国节假日/调休/补班制度的精确建模**。
 
 - 四种日期类型：节假日 / 调休工作日 / 普通周末 / 工作日
-- 桌面端布局：侧边栏（MiniCalendar + 事件占位） + 拉伸主视图
+- 桌面端布局：侧边栏（MiniCalendar + 近期事件） + 拉伸主视图
 - 月/周/日三视图，分段切换，模式感知导航
 - MD3 暗色/浅色双主题，设置中一键切换
 - 设置页 container transform 动画（齿轮 📍 → 全屏展开）
 - 月切换 shared axis 滑动动画，视图切换 scale+fade 快速动画
 - 离月时右下角 FAB 快捷回今天
-- 后续：swipe 手势、事件系统、云同步
+- 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）、localStorage 持久化
+- 后续：swipe 手势、云同步
 
 ## Tech Stack
 
@@ -39,11 +40,11 @@
 │  │  260px      │  ┌──────────────────────────────────────┐ │ │
 │  │  纯展示      │  │ ViewNavigator (« ← 2026年8月 → »)   │ │ │
 │  │             │  │ ViewModeTabs (月/周/日)              │ │ │ ← 固定层
-│  │ MiniCalendar│  ├──────────────────────────────────────┤ │ │
-│  │  (跟随主视图) │  │ <Transition :name="view">            │ │ │
-│  │             │  │   MonthView / WeekView / DayView     │ │ │ ← 内容层
-│  │ Events      │  │   (key=viewMode 才触发动画)           │ │ │
-│  │ (placeholder)│  │ </Transition>                        │ │ │
+│  MiniCalendar│  ├──────────────────────────────────────┤ │ │
+│  (跟随主视图) │  │ <Transition :name="view">            │ │ │
+│             │  │   MonthView / WeekView / DayView     │ │ │ ← 内容层
+│  Events      │  │   (key=viewMode 才触发动画)           │ │ │
+│  (近期事件)   │  │ </Transition>                        │ │ │
 │  │             │  │                          [📅 FAB]    │ │ │
 │  └─────────────┴───────────────────────────────────────────┘ │
 │                                                               │
@@ -86,17 +87,23 @@ src/
 │       ├── types.ts              # DateCell, MonthGrid, WeekGrid, DayGrid, ViewMode
 │       ├── engine.ts             # generateMonthGrid / generateWeekGrid / generateDayCell
 │       └── engine.test.ts
+│   └── events/
+│       ├── types.ts              # CalendarEvent, RecurrenceRule, EventOccurrence, TimeBlockLayout
+│       ├── engine.ts             # 重复展开 / getEventsInRange / validateEvent / layoutTimeBlocks
+│       └── engine.test.ts
 ├── stores/
-│   └── calendarStore.ts          # currentView / viewMode / theme / weekStartsOn / navDirection / 模式感知导航 (goNext/goPrev)
+│   ├── calendarStore.ts          # currentView / viewMode / theme / weekStartsOn / navDirection / 模式感知导航 (goNext/goPrev)
+│   └── eventsStore.ts            # 事件 CRUD + localStorage 持久化 (kanadere.events.v1) + dialog 状态
 ├── composables/
 │   └── useCalendar.ts            # useCalendar() + useMiniCalendar() helper
 ├── components/
 │   ├── CalendarGrid.vue          # 7×n 网格 + 周末列底色 + 行分割线 + 圆角卡片
-│   ├── DateCell.vue              # 状态机 + 左色条 + today badge + 圆角 hover/选中块
+│   ├── DateCell.vue              # 状态机 + 左色条 + today badge + 事件 chip + 创建入口
 │   ├── ViewNavigator.vue         # 顶部导航栏（« ← 标题 → »），固定层
 │   ├── ViewModeTabs.vue          # 月/周/日 分段切换，固定层
-│   ├── Sidebar.vue               # 侧边栏（纯展示，无设置按钮）
-│   ├── MiniCalendar.vue          # 紧凑月历，跟随主视图月份
+│   ├── Sidebar.vue               # 侧边栏（MiniCalendar + 近期事件列表）
+│   ├── MiniCalendar.vue          # 紧凑月历，跟随主视图月份，事件点
+│   ├── EventDialog.vue           # 事件创建/编辑对话框（MD3 dialog + switch）
 │   └── TodayFab.vue              # 离月时右下角悬浮回今天按钮
 ├── views/
 │   ├── MonthView.vue              # 月视图内容（slide transition 只作用于网格）
@@ -123,8 +130,8 @@ Sidebar (260px)              Main Area (flex: 1)
 │  紧凑 7×6    │──────────────────────────────────────│
 │  跟随主视图   │ ┌──────────────────────────────────┐ │
 │              │ │  一  二  三  四  五  六  日        │ │
-│ 近期事件      │ │  CalendarGrid (圆角卡片, m:12px)  │ │
-│  暂无事件     │ └──────────────────────────────────┘ │
+│ 近期事件      │  │  CalendarGrid (圆角卡片, m:12px)  │ │
+│  事件列表     │ └──────────────────────────────────────┘ │
 │              │                          [📅 FAB]    │
 └──────────────┴──────────────────────────────────────┘
 [⚙/✕] 独立按钮：position:fixed; left:12px; bottom:16px; z-index:1000
@@ -165,6 +172,8 @@ Sidebar (260px)              Main Area (flex: 1)
 | Selected | Badge: `primary` 实心圆 + `primary-container` 底 | — | — |
 
 Hover/选中背景是 `::after` 圆角块（`inset: 2px` + `border-radius: sm`，带 shape morph 过渡）。
+
+事件 chip 渲染在 `.dc__label` 之后（`.dc__events`），位于 `::after` hover 块之上（`::after` 带 `pointer-events: none`，chip 可正常点击）。hover 时右上角出现 `.dc__add` 小圆按钮（双击格亦可）创建事件。
 
 周末列仍保留 `surface-container-lowest` 整列底色——不影响 cell 内部放事件。
 
@@ -248,7 +257,15 @@ resolveDayType(date, data):
 | 视图切换动画 | scale+fade 200ms，导航栏/tabs/FAB 固定不动 |
 | 设置开关无视图动画 | 视图组件常驻 DOM（被 overlay 盖住），仅 viewMode 切换触发动画 |
 | 网格圆角 | 三视图卡片圆角（16px）+ DateCell 圆角 hover/选中块 |
-| 23 单测 | holiday 7 + calendar 16 |
+| 事件核心引擎 | `core/events/`：重复展开（日/周/月/年，BYMONTHDAY 跳过语义）、排序、validateEvent、时间块 lane 布局 |
+| 事件存储 | Pinia eventsStore + localStorage `kanadere.events.v1`（损坏数据降级空数组） |
+| 事件对话框 | MD3 dialog：标题/日期/全天 switch/时间/重复+间隔+结束日期，创建与编辑共用，删除确认 |
+| 月视图事件 | DateCell 事件 chip（最多 2 条 + 溢出计数），hover + 按钮 / 双击创建 |
+| 周/日视图事件 | 时间块绝对定位 + 重叠分 lane，全天 28px 顶部槽，点击空白按小时创建 |
+| 侧边栏近期事件 | 未来 60 天取前 5 条，点击跳转主视图对应日期 |
+| 迷你日历事件点 | 有事件日期显示 4px 圆点（currentColor 自适应配色） |
+| MD3 滚动条 | 全局 8px 圆角细滚动条（WebKit + Firefox `scrollbar-color`） |
+| 53 单测 | holiday 7 + calendar 16 + events 30 |
 
 ## Commands
 
@@ -289,21 +306,19 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] 模式感知导航 (goNext/goPrev 按 viewMode 步进)
 - [x] View transition (scale+fade, 导航栏固定不动)
 - [x] 设置开关不触发视图切换动画（视图常驻 + overlay 覆盖）
+- [x] core/events 事件模型 + 重复规则引擎 + 30 单测
+- [x] Pinia eventsStore（localStorage 持久化 + dialog 状态）
+- [x] EventDialog 创建/编辑/删除（MD3 dialog + 全天 switch + 重复规则表单）
+- [x] 月视图事件 chip + hover 创建入口（+ 按钮 / 双击）
+- [x] 周/日视图时间块 + 全天槽 + 点击空白按小时创建
+- [x] 侧边栏近期事件列表 + 迷你日历事件点
+- [x] MD3 风格全局滚动条
 
 ## Up Next
 
 ### Phase 2 — Views (剩余)
 
 - [ ] Swipe gestures (mobile)
-
-### Phase 3 — Events
-
-- [ ] `core/event/types.ts`
-- [ ] `core/event/engine.ts`
-- [ ] eventStore
-- [ ] Event rendering on DateCell (dots/bars below accent bar)
-- [ ] Event create/edit modal
-- [ ] Repeat event
 
 ### Phase 4 — Packaging
 
@@ -318,7 +333,10 @@ npx vue-tsc --noEmit  # 类型检查
 - New year data: add `data/202X.ts` + register in `data/index.ts`.
 - **MD3 tokens** (`src/styles/tokens.css`) are the design authority. Never hardcode colors.
 - State layers (`::after` pseudo) handle hover/press. Rounded with `border-radius` transition (shape morph).
-- DateCell uses `::before` for type accent bars — keep this area clear for future event indicators.
+- DateCell uses `::before` for type accent bars. Event chips render below the label in `.dc__events` (above the `::after` hover layer, which has `pointer-events: none`).
+- Events: `core/events/engine.ts` owns recurrence expansion (RRULE BYMONTHDAY skip semantics — never clamp), sorting, validation, and lane layout. Store forwards to it; components only render.
+- Event dialog (`.ed`/`ed__*`) is self-contained: reads `eventsStore.dialog`, z-index 1100 (above settings overlay 999 / gear 1000). Repeat edit/delete applies to the whole series — no per-occurrence exceptions.
+- localStorage key `kanadere.events.v1`; corrupted JSON degrades silently to `[]`.
 - `navDirection` is set by ALL navigation methods. The month slide transition reads it.
 - Navigation API is mode-aware: `goNext()`/`goPrev()` step by month/week/day per `viewMode`. Month views anchor `currentDate` to the 1st; week/day anchor to the actual date.
 - Settings button is a STANDALONE element in App.vue (`position: fixed; left: 12px; bottom: 16px; z-index: 1000`), NOT inside Sidebar. Same button toggles open/close (gear↔X). Sidebar is display-only.

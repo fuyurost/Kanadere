@@ -11,6 +11,7 @@
 - **动画体系**：设置页 container transform 圆形展开、月切换 shared axis 滑动、视图切换 scale+fade、Gear↔X 图标旋转 morph
 - **键盘导航**：← → ↑ ↓，跨月自动跟随（主视图与侧边栏迷你日历同步）
 - **周末起始日可配置**：周一 / 周日
+- **事件系统**：创建/编辑/删除、全天/时间段、每日/每周/每月/每年重复、localStorage 持久化、月/周/日三视图渲染、侧边栏近期事件、迷你日历事件点
 
 ## 技术栈
 
@@ -21,7 +22,7 @@ Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Materia
 ```bash
 npm install       # 安装依赖
 npm run dev       # 开发服务器
-npm test          # 运行测试（23 个单测）
+npm test          # 运行测试（53 个单测）
 npm run build     # 生产构建（vue-tsc 类型检查 + vite build）
 npm run preview   # 预览构建产物
 ```
@@ -32,9 +33,10 @@ npm run preview   # 预览构建产物
 src/
 ├── core/          # 纯 TS 核心逻辑（零框架依赖）
 │   ├── holiday/   # 节假日引擎 + 年份数据（2025/2026）
-│   └── calendar/  # 月/周/日网格生成引擎
-├── stores/        # Pinia 状态（视图模式/主题/导航）
-├── components/    # 日历网格、日期单元格、导航栏、视图切换等
+│   ├── calendar/  # 月/周/日网格生成引擎
+│   └── events/    # 事件模型、重复规则引擎、时间块布局
+├── stores/        # Pinia 状态（视图模式/主题/导航/事件）
+├── components/    # 日历网格、日期单元格、导航栏、视图切换、事件对话框等
 ├── views/         # 月/周/日视图 + 设置页
 └── styles/        # MD3 暗/亮双主题 Design Tokens
 ```
@@ -44,7 +46,7 @@ src/
 ## 路线图
 
 - [ ] 移动端 swipe 手势
-- [ ] 事件系统（创建/编辑/重复事件）
+- [x] 事件系统（创建/编辑/重复事件）
 - [ ] 桌面端打包（Tauri）、PWA、iCal 导入导出
 
 ## 许可
