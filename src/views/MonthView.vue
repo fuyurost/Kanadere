@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCalendar } from '../composables/useCalendar'
+import { useSwipeNavigation } from '../composables/useSwipe'
 import CalendarGrid from '../components/CalendarGrid.vue'
 
 const { grid, yearMonth, store } = useCalendar()
+
+const root = ref<HTMLElement | null>(null)
+useSwipeNavigation(root, (dir) => {
+  if (dir === 'left') store.goNext()
+  else store.goPrev()
+})
 
 const slideName = computed(() => `slide-${store.navDirection}`)
 
@@ -23,7 +30,7 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="mv" tabindex="0" @keydown="onKeydown">
+  <div ref="root" class="mv" tabindex="0" @keydown="onKeydown">
     <Transition :name="slideName" mode="out-in">
       <CalendarGrid
         :key="`${yearMonth.year}-${yearMonth.month}`"
@@ -62,5 +69,6 @@ function onKeydown(e: KeyboardEvent) {
   outline: none;
   background: var(--md-sys-color-surface);
   overflow: hidden;
+  touch-action: pan-y;
 }
 </style>

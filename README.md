@@ -13,6 +13,7 @@
 - **周末起始日可配置**：周一 / 周日
 - **事件系统**：创建/编辑/删除、全天/时间段、每日/每周/每月/每年重复、localStorage 持久化、月/周/日三视图渲染、侧边栏近期事件、迷你日历事件点
 - **桌面端打包**：Tauri 2 构建 Windows exe + NSIS/MSI 安装包（GitHub Actions 自动构建，dist/exe 均作为 artifact 产出）
+- **移动端手势**：月/周/日视图左右滑动切换（复用模式感知导航与月滑动动画）
 
 ## 技术栈
 
@@ -23,7 +24,7 @@ Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Tauri 2
 ```bash
 npm install       # 安装依赖
 npm run dev       # 开发服务器
-npm test          # 运行测试（53 个单测）
+npm test          # 运行测试（60 个单测）
 npm run build     # 生产构建（vue-tsc 类型检查 + vite build）
 npm run tauri build  # 打包 Windows 桌面应用（需 Rust；exe 在 src-tauri/target/release/）
 npm run preview   # 预览构建产物
@@ -49,7 +50,7 @@ src-tauri/         # Tauri 2 桌面壳（Rust + 打包配置）
 
 ## 路线图
 
-- [ ] 移动端 swipe 手势
+- [x] 移动端 swipe 手势
 - [x] 事件系统（创建/编辑/重复事件）
 - [x] 桌面端打包（Tauri：Windows exe 自动构建）
 - [ ] PWA、iCal 导入导出

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { isSameDay } from 'date-fns'
 import { useCalendar } from '../composables/useCalendar'
+import { useSwipeNavigation } from '../composables/useSwipe'
 import { generateWeekGrid } from '../core/calendar/engine'
 import { getHolidayData } from '../core/holiday/data'
 import { DayType } from '../core/holiday/types'
@@ -13,6 +14,12 @@ import type { EventOccurrence, TimeBlockLayout } from '../core/events/types'
 const { store } = useCalendar()
 const eventsStore = useEventsStore()
 const today = new Date()
+
+const root = ref<HTMLElement | null>(null)
+useSwipeNavigation(root, (dir) => {
+  if (dir === 'left') store.goNext()
+  else store.goPrev()
+})
 
 const grid = computed(() => {
   const d = store.currentDate
@@ -91,7 +98,7 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="wv" tabindex="0" @keydown="onKeydown">
+  <div ref="root" class="wv" tabindex="0" @keydown="onKeydown">
     <div class="wv__grid">
       <!-- 时间列 -->
       <div class="wv__time-col">
@@ -165,6 +172,7 @@ function onKeydown(e: KeyboardEvent) {
   outline: none;
   background: var(--md-sys-color-surface);
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 .wv__grid {
