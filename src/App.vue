@@ -9,6 +9,7 @@ import MonthView from './views/MonthView.vue'
 import WeekView from './views/WeekView.vue'
 import DayView from './views/DayView.vue'
 import SettingsView from './views/SettingsView.vue'
+import EventDialog from './components/EventDialog.vue'
 
 const store = useCalendarStore()
 const transitionName = ref('view')
@@ -113,6 +114,9 @@ const activeView = computed(() => {
         </svg>
       </Transition>
     </button>
+
+    <!-- 事件创建/编辑对话框（z-index 1100，覆盖设置层） -->
+    <EventDialog />
   </div>
 </template>
 
