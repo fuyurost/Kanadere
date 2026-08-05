@@ -13,7 +13,8 @@
 - 离月时右下角 FAB 快捷回今天
 - 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）、localStorage 持久化
 - Tauri 2 桌面打包：Windows exe + NSIS/MSI 安装包，GitHub Actions 自动构建
-- 后续：swipe 手势、云同步
+- 移动端 swipe 手势：月/周/日视图左右滑动切换（复用模式感知导航）
+- 后续：云同步
 
 ## Tech Stack
 
@@ -277,7 +278,8 @@ resolveDayType(date, data):
 | Tauri 桌面壳 | `src-tauri/`：tauri.conf.json + capabilities + 生成图标集（`tauri icon`） |
 | Tauri 打包 | `npm run tauri build` → `kanadere.exe` + NSIS/MSI 安装包 |
 | CI exe 构建 | Actions `tauri` job（windows-latest）：npm ci → rust 构建 → 上传 `kanadere-windows-exe` |
-| 53 单测 | holiday 7 + calendar 16 + events 30 |
+| 移动端 swipe 手势 | 月/周/日视图 touch 左右滑动切换（`useSwipeNavigation` + 模式感知 goNext/goPrev，复用月滑动动画） |
+| 60 单测 | holiday 7 + calendar 23 + events 30 |
 
 ## Commands
 
@@ -328,12 +330,9 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] Tauri 2 桌面壳（src-tauri + 图标 + capabilities）
 - [x] Actions tauri job：Windows exe + NSIS/MSI 自动构建（artifact）
 - [x] 本地 `npm run tauri build` 全链路验证
+- [x] 移动端 swipe 手势（月/周/日视图 touch 导航，`useSwipeNavigation`）
 
 ## Up Next
-
-### Phase 2 — Views (剩余)
-
-- [ ] Swipe gestures (mobile)
 
 ### Phase 4 — Packaging (剩余)
 
