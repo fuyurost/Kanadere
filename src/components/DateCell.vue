@@ -71,6 +71,7 @@ const label = computed(() => {
   display: flex;
   flex-direction: column;
   min-height: 80px;
+  min-width: 0; /* grid item 允许收缩，内容不撑开 1fr 列 */
   padding: 6px 6px 6px 4px;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   cursor: pointer;
@@ -142,6 +143,7 @@ const label = computed(() => {
   gap: 2px;
   margin-top: 2px;
   padding-left: 6px;
+  min-width: 0; /* flex item 允许收缩，防止 nowrap 内容撑破列宽 */
 }
 .dc__chip {
   font: var(--md-sys-typescale-label-small);
@@ -152,6 +154,7 @@ const label = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
   cursor: pointer;
 }
 .dc__more {
