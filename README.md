@@ -1,0 +1,58 @@
+# Kanadere
+
+现代化中国节假日日历应用，基于 Material Design 3 设计系统，支持月 / 周 / 日三视图、暗 / 亮双主题，精确建模中国法定节假日与调休补班制度。
+
+## 已实现功能
+
+- **四种日期类型**：节假日 / 调休工作日 / 普通周末 / 工作日，左色条区分
+- **月 / 周 / 日三视图**：分段切换，模式感知导航（月 ±1 月、周 ±7 天、日 ±1 天）
+- **中国节假日数据**：2025 + 2026 全年法定节假日与调休安排
+- **暗 / 亮双主题**：MD3 token 级翻转，设置页一键切换
+- **动画体系**：设置页 container transform 圆形展开、月切换 shared axis 滑动、视图切换 scale+fade、Gear↔X 图标旋转 morph
+- **键盘导航**：← → ↑ ↓，跨月自动跟随（主视图与侧边栏迷你日历同步）
+- **周末起始日可配置**：周一 / 周日
+
+## 技术栈
+
+Vue 3 · TypeScript (strict) · Vite 8 · Pinia · date-fns · Vitest · Material Design 3
+
+## 快速开始
+
+```bash
+npm install       # 安装依赖
+npm run dev       # 开发服务器
+npm test          # 运行测试（23 个单测）
+npm run build     # 生产构建（vue-tsc 类型检查 + vite build）
+npm run preview   # 预览构建产物
+```
+
+## 目录结构
+
+```
+src/
+├── core/          # 纯 TS 核心逻辑（零框架依赖）
+│   ├── holiday/   # 节假日引擎 + 年份数据（2025/2026）
+│   └── calendar/  # 月/周/日网格生成引擎
+├── stores/        # Pinia 状态（视图模式/主题/导航）
+├── components/    # 日历网格、日期单元格、导航栏、视图切换等
+├── views/         # 月/周/日视图 + 设置页
+└── styles/        # MD3 暗/亮双主题 Design Tokens
+```
+
+新增年份数据：在 `src/core/holiday/data/` 添加 `202X.ts` 并在 `index.ts` 注册。
+
+## 路线图
+
+- [ ] 移动端 swipe 手势
+- [ ] 事件系统（创建/编辑/重复事件）
+- [ ] 桌面端打包（Tauri）、PWA、iCal 导入导出
+
+## 许可
+
+本项目使用 **Vibe Coding**（AI 辅助编程）开发。
+
+Copyright © 2026 fuyurost
+
+本项目采用 **GNU Affero General Public License v3.0 (AGPL-3.0)** 授权。
+
+> 使用、修改或分发本项目代码，需遵守 AGPL-3.0 条款：修改后的版本必须以相同许可证开源，通过网络提供服务时须向用户提供对应源码。

@@ -1,0 +1,138 @@
+/* ── MD3 Design Tokens (Dark Theme) ── */
+
+:root {
+  /* ── Primary (blue) ── */
+  --md-sys-color-primary: #A8C7FA;
+  --md-sys-color-on-primary: #062E6F;
+  --md-sys-color-primary-container: #1E4485;
+  --md-sys-color-on-primary-container: #D5E3FF;
+
+  /* ── Secondary ── */
+  --md-sys-color-secondary: #BFC7DC;
+  --md-sys-color-on-secondary: #293042;
+  --md-sys-color-secondary-container: #3F4759;
+  --md-sys-color-on-secondary-container: #DBE3F8;
+
+  /* ── Tertiary (amber — adjusted workday) ── */
+  --md-sys-color-tertiary: #F0BD8C;
+  --md-sys-color-on-tertiary: #48290B;
+  --md-sys-color-tertiary-container: #613F1F;
+  --md-sys-color-on-tertiary-container: #FFDCC2;
+
+  /* ── Error (red — holiday) ── */
+  --md-sys-color-error: #FFB4AB;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-error-container: #93000A;
+  --md-sys-color-on-error-container: #FFDAD6;
+
+  /* ── Surface ── */
+  --md-sys-color-surface: #111318;
+  --md-sys-color-surface-dim: #111318;
+  --md-sys-color-surface-bright: #37393E;
+  --md-sys-color-on-surface: #E2E2E9;
+  --md-sys-color-on-surface-variant: #C3C7CF;
+  --md-sys-color-outline: #8D9199;
+  --md-sys-color-outline-variant: #43474E;
+
+  /* ── Surface Containers ── */
+  --md-sys-color-surface-container-lowest: #0C0E12;
+  --md-sys-color-surface-container-low: #16181D;
+  --md-sys-color-surface-container: #1A1C21;
+  --md-sys-color-surface-container-high: #24262B;
+  --md-sys-color-surface-container-highest: #2F3136;
+
+  /* ── Inverse ── */
+  --md-sys-color-inverse-surface: #E2E2E9;
+  --md-sys-color-inverse-on-surface: #2E3035;
+  --md-sys-color-inverse-primary: #3A5DA1;
+
+  /* ── Elevation ── */
+  --md-sys-elevation-0: none;
+  --md-sys-elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-sys-elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.3), 0 1px 3px 0 rgba(0, 0, 0, 0.15);
+
+  /* ── Shape ── */
+  --md-sys-shape-corner-xs: 4px;
+  --md-sys-shape-corner-sm: 8px;
+  --md-sys-shape-corner-md: 12px;
+  --md-sys-shape-corner-lg: 16px;
+  --md-sys-shape-corner-xl: 24px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* ── Motion ── */
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* ── Typography ── */
+  --md-sys-typescale-display-large: 400 57px/64px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-headline-large: 400 32px/40px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-headline-medium: 400 28px/36px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-headline-small: 400 24px/32px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-title-large: 400 22px/28px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-title-medium: 500 16px/24px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-title-small: 500 14px/20px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-label-large: 500 14px/20px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-label-medium: 500 12px/16px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-label-small: 500 11px/16px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-body-large: 400 16px/24px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-body-medium: 400 14px/20px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --md-sys-typescale-body-small: 400 12px/16px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+}
+
+/* ── MD3 Design Tokens (Light Theme) ── */
+[data-theme="light"] {
+  --md-sys-color-primary: #3A5DA1;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #D5E3FF;
+  --md-sys-color-on-primary-container: #001B3F;
+
+  --md-sys-color-secondary: #565E71;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #DBE3F8;
+  --md-sys-color-on-secondary-container: #131C2B;
+
+  --md-sys-color-tertiary: #77563A;
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #FFDCC2;
+  --md-sys-color-on-tertiary-container: #2C1600;
+
+  --md-sys-color-error: #BA1A1A;
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-error-container: #FFDAD6;
+  --md-sys-color-on-error-container: #410002;
+
+  --md-sys-color-surface: #F9F9FF;
+  --md-sys-color-surface-dim: #D9D9E4;
+  --md-sys-color-surface-bright: #F9F9FF;
+  --md-sys-color-on-surface: #181C20;
+  --md-sys-color-on-surface-variant: #43474E;
+  --md-sys-color-outline: #73777F;
+  --md-sys-color-outline-variant: #C3C7CF;
+
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #F3F3F9;
+  --md-sys-color-surface-container: #EDEEF4;
+  --md-sys-color-surface-container-high: #E7E8EE;
+  --md-sys-color-surface-container-highest: #E2E2E8;
+
+  --md-sys-color-inverse-surface: #2E3035;
+  --md-sys-color-inverse-on-surface: #F1F0F6;
+  --md-sys-color-inverse-primary: #A8C7FA;
+
+  --md-sys-elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 1px 3px 1px rgba(0, 0, 0, 0.05);
+  --md-sys-elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.08), 0 2px 6px 2px rgba(0, 0, 0, 0.05);
+  --md-sys-elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
