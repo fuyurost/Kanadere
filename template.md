@@ -14,7 +14,10 @@
 - 事件系统：创建/编辑/删除、全天/时间段、重复规则（日/周/月/年）
 - 跨平台事件存储：`core/events/storage.ts` 定义 `EventStorage` 接口，`src/platform/` 提供 localStorage（Web）与 tauri-plugin-store（桌面 events.json）适配器，桌面端自动迁移旧 localStorage 数据
 - 开发者调试：设置页开发者分区（开发水印 / 清除事件 / 一键重置，二次点击确认）
-- Tauri 2 桌面打包：Windows exe + NSIS/MSI 安装包，GitHub Actions 自动构建
+- 节日开关：设置页「日历」分区三组独立开关（法定节假日 / 传统节日 / 西方节日），关闭后对应节日不再显示为节假日，回落为普通周末/工作日；调休补班不受影响
+- 特殊日分类配色 + 农历与节气：节假日按类别分色（法定红 / 传统橙 / 西方蓝，调休补班蓝灰）；每格显示农历日（初一显示月名，闰月带「闰」），节气日优先显示 24 节气名
+- 个性化：图片背景（遮罩强度/模糊可调，最长边 1920 JPEG 压缩持久化）+ 特殊日颜色自定义（法定/传统/西方三色取色器，自动派生可读前景色，恢复默认回落方案色）
+- Tauri 2 桌面打包：Windows exe + NSIS 安装包（alpha 预发布版本暂不含 MSI，正式版恢复），GitHub Actions 自动构建
 - 移动端 swipe 手势：月/周/日视图左右滑动切换（复用模式感知导航）
 - 后续：云同步
 
@@ -31,7 +34,8 @@
 | Transitions | Vue `<Transition>` | view 切换（scale+fade）+ shared axis 月滑动 + icon crossfade |
 | Animations | CSS clip-path + transform + border-radius | 设置页 container transform、FAB scale、cell press、shape morph |
 | Dates | date-fns | 纯函数、tree-shakeable |
-| Desktop | Tauri 2 | `src-tauri/`，Rust 壳 + WebView2，NSIS/MSI 打包 |
+| Lunar | lunar-javascript 1.7.7 | 农历日 + 24 节气；年份级 JieQi 表按日期组件匹配（库内固定北京时间，UTC 稳定） |
+| Desktop | Tauri 2 | `src-tauri/`，Rust 壳 + WebView2，NSIS 打包（alpha 暂缓 MSI） |
 | CI | GitHub Actions | ubuntu: test+vite dist；windows: Tauri exe + 安装包，均上传 artifact |
 | Testing | Vitest | 测试文件：`src/**/*.test.ts` |
 | Language | TypeScript (strict) | |
@@ -230,8 +234,8 @@ Hover/选中背景是 `::after` 圆角块（`inset: 2px` + `border-radius: sm`�
 ### 节假日优先级链
 
 ```
-resolveDayType(date, data):
-  1. 在 holidays[].range 内？ → Holiday
+resolveDayType(date, data, enabled?):
+  1. 在 holidays[].range 内（按 enabled 类别集合过滤，缺省全启用）？ → Holiday
   2. 在 adjustedWorkdays[] 中？ → AdjustedWorkday
   3. date-fns isWeekend？    → Weekend
   4. 否则                   → Workday
@@ -263,8 +267,10 @@ resolveDayType(date, data):
 | 键盘导航 | ← → ↑ ↓，跨月自动切月，周/日视图跟随 |
 | 跨月点击导航 | 点前/后月日期自动切月 |
 | 周末起始 | 设置页切换 |
-| 设置页 | 主题 / 每周起始日 / 显示周数(占位) / 节假日订阅(占位) / 关于 |
-| 2025+2026 数据 | 元旦/春节(9天)/清明/劳动/端午/中秋·国庆(7天) |
+| 设置页 | 主题 / 每周起始日 / 显示周数(占位) / 节日开关(法定/传统/西方) / 关于 |
+| 2025–2027 数据 | 法定+调休（2025/2026）＋传统 7 项＋西方 9 项；2027 仅传统/西方（法定安排未公布） |
+| 农历/节气 | `core/lunar/lunar.ts` `getLunarSubLabel`（节气优先）：月格数字右侧子标签 + 日视图头部；节气 tertiary、农历 on-surface-variant；初一显示月名（含闰） |
+| 分类配色 | 节假日 `dc--cat-*`/迷你日历/周/日视图按类别取 error(法定)/tertiary(传统)/secondary(西方)；调休补班改 inverse-primary（tertiary 让位） |
 | 月/周/日视图 | ViewModeTabs 分段切换，模式感知导航 |
 | 周视图 | 7 列 × 24h 网格，列头含节假日/调休标签，周末列底色 |
 | 日视图 | 24h 时间线，节假日/调休 chip，当前小时高亮 |
@@ -280,13 +286,13 @@ resolveDayType(date, data):
 | 迷你日历事件点 | 有事件日期显示 4px 圆点（currentColor 自适应配色） |
 | MD3 滚动条 | 全局 8px 圆角细滚动条（WebKit + Firefox `scrollbar-color`） |
 | Tauri 桌面壳 | `src-tauri/`：tauri.conf.json + capabilities + 生成图标集（`tauri icon`） |
-| Tauri 打包 | `npm run tauri build` → `kanadere.exe` + NSIS/MSI 安装包 |
+| Tauri 打包 | `npm run tauri build` → `kanadere.exe` + NSIS 安装包（alpha 暂缓 MSI） |
 | CI exe 构建 | Actions `tauri` job（windows-latest）：npm ci → rust 构建 → 上传 `kanadere-windows-exe` |
 | 移动端 swipe 手势 | 月/周/日视图 touch 左右滑动切换（`useSwipeNavigation` + 模式感知 goNext/goPrev，复用月滑动动画） |
 | 事件存储抽象 | `core/events/storage.ts` `EventStorage` 异步接口；`src/platform/`：localStorage 适配器（Web）+ tauri-plugin-store 适配器（桌面 events.json，自动迁移旧数据）；eventsStore 异步 init，main.ts 启动前加载 |
 | 窄视口响应式 | `<600px` 折叠侧边栏（MD3 compact 断点）；DateCell 事件 chip `min-width:0` + ellipsis 防溢出 |
 | 开发者调试 | 设置页开发者分区：开发水印（版本号 `__APP_VERSION__` + 开发中提示，持久化开关）、清除事件、一键重置（二次点击确认，恢复全部默认） |
-| 88 单测 | holiday 7 + calendar 23 + events 30 + ical 22 + storage 6 |
+| 131 单测 | holiday 19 + data 8 + calendar 32 + lunar 8 + events 30 + ical 22 + storage 6 + contrast 6 |
 | iCal 导入导出 | `core/events/ical.ts`：generateICal（RFC 5545 VCALENDAR 2.0，CRLF + 75 字符行折叠，全天 VALUE=DATE + DTEND 次日，非全天浮动 DATE-TIME，RRULE FREQ/INTERVAL/UNTIL）+ parseICal（大小写不敏感、折叠/CRLF 容错、RRULE→RecurrenceRule、validateEvent 过滤，不抛异常）；设置页「数据」分区：Web Blob 下载 + 文件选择，Tauri 原生对话框（tauri-plugin-dialog + tauri-plugin-fs，dialog:allow-open/save + fs:allow-read/write-text-file 最小权限，选中路径由 dialog 动态加入 fs scope）；导入去重（title/date/allDay/startTime 全同跳过）+ 结果提示弹窗 |
 | PWA | `vite-plugin-pwa`：manifest（`#A8C7FA` theme / `#111318` background，zh-CN，standalone，portrait）+ workbox 预缓存 + navigateFallback，192/512 应用图标（源自 `src-tauri/app-icon.png`），autoUpdate 更新即生效 |
 
@@ -308,7 +314,7 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] Project scaffold
 - [x] Core holiday types + engine + tests (7)
 - [x] Core calendar types + engine + tests (8)
-- [x] 2025 + 2026 holiday data + year routing
+- [x] 2025–2027 holiday data + year routing（2025/2026 法定+调休；传统/西方各年齐备；2027 无法定）
 - [x] Pinia calendarStore (currentView / viewMode / theme / weekStartsOn / navDirection / full nav API)
 - [x] MD3 Design System (dual-theme tokens + base + surface-container gradient)
 - [x] Desktop sidebar (Sidebar + MiniCalendar + events placeholder)
@@ -337,7 +343,7 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] 侧边栏近期事件列表 + 迷你日历事件点
 - [x] MD3 风格全局滚动条
 - [x] Tauri 2 桌面壳（src-tauri + 图标 + capabilities）
-- [x] Actions tauri job：Windows exe + NSIS/MSI 自动构建（artifact）
+- [x] Actions tauri job：Windows exe + NSIS 自动构建（artifact；alpha 暂缓 MSI）
 - [x] 本地 `npm run tauri build` 全链路验证
 - [x] 移动端 swipe 手势（月/周/日视图 touch 导航，`useSwipeNavigation`）
 - [x] 事件存储抽象与桌面迁移（EventStorage + tauri-plugin-store + 旧数据迁移）
@@ -345,6 +351,9 @@ npx vue-tsc --noEmit  # 类型检查
 - [x] 开发者调试选项（水印 / 清除事件 / 一键重置，二次确认）
 - [x] iCal 导入导出（core/events/ical.ts + 设置页「数据」分区，Web/Tauri 双端，22 单测）
 - [x] PWA（manifest + service worker 预缓存 + 192/512 应用图标，autoUpdate）
+- [x] 节日开关（FestivalCategory 三组独立开关：法定/传统/西方；engine/网格生成器 enabled 过滤；设置页三行 + MD3 switch；数据 2025–2027 传统+西方，2025/2026 法定+调休）
+- [x] 农历与节气 + 分类配色（`core/lunar/lunar.ts` 封装 lunar-javascript 1.7.7：年份级 JieQi 表按日期组件匹配、UTC 稳定，2025–2027 与香港天文台逐条核对；`getHolidayEntry` 统一名称/类别；DateCell 子标签 + `dc--cat-*` 分类色，调休改 inverse-primary；`src/types/lunar-javascript.d.ts` 声明）
+- [x] 个性化大升级（图片背景 + 节日颜色自定义：`utils/backgroundImage.ts` 最长边 1920/JPEG 0.78 压缩；store 新状态全进 prefs；`core/color/contrast.ts` 对比度前景（WCAG 亮度阈值 0.4）；tokens.css `--app-festival-*` 语义别名；设置页取色器/滑杆/二次确认移除；三视图与迷你日历全部换别名，调休 inverse 系不动）
 
 ## Up Next
 
@@ -355,6 +364,7 @@ npx vue-tsc --noEmit  # 类型检查
 ## Notes for Future Agents
 
 - Core (`src/core/`) MUST remain framework-agnostic — no Vue/Pinia imports. Storage abstraction: `EventStorage` interface lives in core (async, platform-neutral), concrete adapters live in `src/platform/` (localStorage / tauri-plugin-store). Future Flutter/Kotlin/Swift ports implement the same interface — never put platform storage calls in core or stores.
+- Lunar: `lunar-javascript@1.7.7` 无 TS 类型，声明在 `src/types/lunar-javascript.d.ts`（只声明用到的 API）。节气必须用年份级表 `Lunar.fromYmd(y, 1, 1).getJieQiTable()`（key→Solar，key 即简体中文名）按日期组件匹配——库内固定北京时间计算，CI(UTC) 稳定；勿用 `Solar.getJieQi()`。该版本不存在 `LunarYear.fromYear(y).getJieQiTable()`。表覆盖「上一年冬至～当年大雪」，12 月下旬的冬至要查下一年的表（`getSolarTermLabel` 查 table[y] 再查 table[y+1]）。
 - Events load async via `eventsStore.init()` (resolved in main.ts before mount). All mutators (`createEvent`/`updateEvent`/`deleteEvent`/`clearEvents`) await init internally — never assume sync state.
 - Tauri detection: `'__TAURI_INTERNALS__' in window`; tauri adapter is dynamic-imported so web builds stay free of plugin code.
 - Desktop events live in `appDataDir/events.json` (`tauri-plugin-store`, autoSave). First load migrates legacy `kanadere.events.v1` localStorage once. Web keeps using the localStorage key.
@@ -362,7 +372,10 @@ npx vue-tsc --noEmit  # 类型检查
 - Settings page has no close button — App.vue's standalone gear button toggles it; overlay covers mounted views (never unmount views on settings toggle).
 - Pinia is SSOT. Components derive via composables.
 - New year data: add `data/202X.ts` + register in `data/index.ts`.
-- **MD3 tokens** (`src/styles/tokens.css`) are the design authority. Never hardcode colors.
+- MD3 tokens (`src/styles/tokens.css`) are the design authority. Never hardcode colors. Personalization aliases (`--app-festival-*`, `--app-bg-*`) are defined there (or set inline on `<html>` by the store) — components must reference the aliases, not raw tokens, so user overrides propagate.
+- Background layer: `html[data-background]` drives `body::before` (image, `filter: blur(var(--app-bg-blur))` + `scale(1.06)`) and `body::after` (surface mask via `color-mix` + `--app-bg-dim`) at `z-index: -1`, so in-flow opaque backgrounds hide them. Transparencies (`.app`, `.mv/.wv/.dv`, `.cg`, `.wv__grid`, `.wv__day-head`, `.dv__body`) and 55% weekend columns live in `base.css` GLOBAL scope (scoped rules can't reach them and would lose the specificity race). Sidebar / settings overlay / dialog stay opaque. Do not move these to scoped styles.
+- Festival color flow: store writes `--app-festival-X` (user hex) + `--app-festival-X-fg` (`contrastForeground`, threshold L>0.4 → black) inline on `<html>`; unset categories fall back to tokens.css aliases (error/tertiary/secondary). DayView tags are SOLID pills (`fg` on alias bg) — keep them that way; `.dc__label--*` text stays on-surface in the alias color (NOT `-fg`, which is for text on the colored bg).
+- `getComputedStyle().getPropertyValue('--x')` returns the raw token stream (`var(--md-sys-color-error)` unresolved) — SettingsView swatch defaults read the BASE tokens (`--md-sys-color-error` etc.) directly, never the aliases.
 - State layers (`::after` pseudo) handle hover/press. Rounded with `border-radius` transition (shape morph).
 - DateCell uses `::before` for type accent bars. Event chips render below the label in `.dc__events` (above the `::after` hover layer, which has `pointer-events: none`).
 - Events: `core/events/engine.ts` owns recurrence expansion (RRULE BYMONTHDAY skip semantics — never clamp), sorting, validation, and lane layout. Store forwards to it; components only render.

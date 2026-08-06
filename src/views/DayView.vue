@@ -5,10 +5,12 @@ import { useCalendar } from '../composables/useCalendar'
 import { useSwipeNavigation } from '../composables/useSwipe'
 import { generateDayCell } from '../core/calendar/engine'
 import { getHolidayData } from '../core/holiday/data'
-import { DayType } from '../core/holiday/types'
+import { DayType, FestivalCategory } from '../core/holiday/types'
+import type { FestivalCategory as FestivalCategoryType } from '../core/holiday/types'
 import { useEventsStore } from '../stores/eventsStore'
 import { dateToKey, layoutTimeBlocks } from '../core/events/engine'
 import type { TimeBlockLayout } from '../core/events/types'
+import { getLunarSubLabel } from '../core/lunar/lunar'
 
 const { store } = useCalendar()
 const eventsStore = useEventsStore()
@@ -22,11 +24,21 @@ useSwipeNavigation(root, (dir) => {
 
 const day = computed(() => {
   const d = store.currentDate
-  return generateDayCell(d, getHolidayData(d.getFullYear()))
+  return generateDayCell(d, getHolidayData(d.getFullYear()), store.enabledCategories)
 })
 
 const weekdayNames = ['日', '一', '二', '三', '四', '五', '六']
 const weekday = computed(() => weekdayNames[day.value.cell.date.getDay()]!)
+
+/** 农历/节气子标签（节气优先） */
+const subLabel = computed(() => getLunarSubLabel(day.value.cell.date))
+
+/** 分类配色修饰类：dv__tag--cat-traditional|western（法定用基础 dv__tag--holiday） */
+function tagCatClass(category: FestivalCategoryType | undefined): string {
+  return category === FestivalCategory.Traditional || category === FestivalCategory.Western
+    ? `dv__tag--cat-${category}`
+    : ''
+}
 
 const hours = Array.from({ length: 24 }, (_, h) => h)
 
@@ -82,12 +94,13 @@ function onKeydown(e: KeyboardEvent) {
       <span class="dv__weekday">星期{{ weekday }}</span>
       <span
         v-if="day.cell.dayType === DayType.Holiday"
-        class="dv__tag dv__tag--holiday"
+        :class="['dv__tag', 'dv__tag--holiday', tagCatClass(day.cell.holidayCategory)]"
       >{{ day.cell.holidayName }}</span>
       <span
         v-else-if="day.cell.dayType === DayType.AdjustedWorkday"
         class="dv__tag dv__tag--adj"
       >调休上班</span>
+      <span v-if="subLabel" :class="['dv__sub', { 'dv__sub--term': subLabel.isTerm }]">{{ subLabel.text }}</span>
     </header>
 
     <div v-if="anyAllDay" class="dv__allday">
@@ -170,14 +183,34 @@ function onKeydown(e: KeyboardEvent) {
   border-radius: var(--md-sys-shape-corner-full);
 }
 
+/* 分类标签：实心 pill（背景 = 类别别名色，前景 = 派生 -fg），与调休 inverse pill 风格统一 */
 .dv__tag--holiday {
-  color: var(--md-sys-color-on-error-container);
-  background: var(--md-sys-color-error-container);
+  color: var(--app-festival-statutory-fg);
+  background: var(--app-festival-statutory);
+}
+.dv__tag--cat-traditional {
+  color: var(--app-festival-traditional-fg);
+  background: var(--app-festival-traditional);
+}
+.dv__tag--cat-western {
+  color: var(--app-festival-western-fg);
+  background: var(--app-festival-western);
 }
 
+/* 调休补班：MD3 inverse pill（反色，与分类 tag 的 container 风格区分）；
+   inverse-surface/inverse-on-surface 不受 5 套配色方案覆盖，暗/亮对比度均 >10:1 */
 .dv__tag--adj {
-  color: var(--md-sys-color-on-tertiary-container);
-  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-inverse-on-surface);
+  background: var(--md-sys-color-inverse-surface);
+}
+
+/* ── 农历/节气子标签（节气高亮、农历弱化）── */
+.dv__sub {
+  font: var(--md-sys-typescale-body-medium);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.dv__sub--term {
+  color: var(--md-sys-color-tertiary);
 }
 
 /* ── 时间线 ── */

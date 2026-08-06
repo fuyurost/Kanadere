@@ -4,11 +4,28 @@ import { useCalendarStore } from '../stores/calendarStore'
 import { useEventsStore } from '../stores/eventsStore'
 import { useDebugStore, DEBUG_STORAGE_KEY } from '../stores/debugStore'
 import { generateICal, parseICal } from '../core/events/ical'
+import { FestivalCategory } from '../core/holiday/types'
 
 const store = useCalendarStore()
 const eventsStore = useEventsStore()
 const debugStore = useDebugStore()
 const appVersion = __APP_VERSION__
+
+/** 节日开关行（与 store.festivalToggles 键一一对应） */
+const FESTIVAL_ROWS = [
+  { key: FestivalCategory.Statutory, label: '法定节假日' },
+  { key: FestivalCategory.Traditional, label: '传统节日' },
+  { key: FestivalCategory.Western, label: '西方节日' },
+] as const
+
+/** 节日颜色行：key = 类别，token = 未自定义时显示的方案色（跟随主题/配色/动态取色） */
+const FESTIVAL_COLOR_ROWS = [
+  { key: FestivalCategory.Statutory, label: '法定节假日', token: '--md-sys-color-error' },
+  { key: FestivalCategory.Traditional, label: '传统节日', token: '--md-sys-color-tertiary' },
+  { key: FestivalCategory.Western, label: '西方节日', token: '--md-sys-color-secondary' },
+] as const
+
+type FestivalColorKey = (typeof FESTIVAL_COLOR_ROWS)[number]['key']
 
 /** 配色方案选择器（色值 = 各方案 dark 主色；动态取色用彩虹渐变点） */
 const COLOR_SCHEMES = [
@@ -27,6 +44,62 @@ const currentScheme = computed(() => {
   }
   return base
 })
+
+/** getComputedStyle 读自定义属性：token 原样返回（hex）或 rgb()/rgba()，统一为 #RRGGBB */
+function tokenToHex(raw: string): string {
+  const v = raw.trim()
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toLowerCase()
+  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(v)
+  if (m) {
+    const hex = (n: string | undefined) => Number(n).toString(16).padStart(2, '0')
+    return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`
+  }
+  return '#808080' // 兜底中灰（tokens.css 与动态配色均为 hex，正常不会到达）
+}
+
+/** 节日颜色当前值：自定义色 ?? 当前 token 计算值（依赖 theme/colorScheme/dynamicSeed，随方案实时刷新） */
+const festivalSwatches = computed<Record<FestivalColorKey, string>>(() => {
+  void store.theme
+  void store.colorScheme
+  void store.dynamicSeed
+  const pick = (row: (typeof FESTIVAL_COLOR_ROWS)[number]) =>
+    store.festivalColors[row.key] ??
+    tokenToHex(getComputedStyle(document.documentElement).getPropertyValue(row.token))
+  return {
+    statutory: pick(FESTIVAL_COLOR_ROWS[0]!),
+    traditional: pick(FESTIVAL_COLOR_ROWS[1]!),
+    western: pick(FESTIVAL_COLOR_ROWS[2]!),
+  }
+})
+
+/** 取色 change：立即应用（input[type=color] 值恒为合法 #RRGGBB） */
+function onFestivalColorChange(key: FestivalColorKey, e: Event) {
+  const value = (e.target as HTMLInputElement).value
+  if (/^#[0-9a-fA-F]{6}$/.test(value)) store.setFestivalColor(key, value)
+}
+
+function onDimInput(e: Event) {
+  store.setBackgroundDim(Number((e.target as HTMLInputElement).value))
+}
+
+function onBlurInput(e: Event) {
+  store.setBackgroundBlur(Number((e.target as HTMLInputElement).value))
+}
+
+/** 背景图片：选择文件 → 压缩（最长边 1920 / JPEG 0.78）→ 存储并开启 */
+async function pickBackground() {
+  const file = await pickImageFile()
+  if (!file) return
+  try {
+    const { downscaleBackground } = await import('../utils/backgroundImage')
+    const dataUrl = await downscaleBackground(file)
+    store.setBackgroundImage(dataUrl)
+    store.setBackgroundEnabled(true)
+    showDataNotice(true, '背景图片已应用')
+  } catch {
+    showDataNotice(false, '图片读取失败，请换一张图片重试')
+  }
+}
 
 /** 配色下拉（fixed 定位，仿 DatePicker 弹层模式） */
 const schemeOpen = ref(false)
@@ -116,7 +189,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', positionSchemePanel)
 })
 
-const confirmTarget = ref<'clear' | 'reset' | null>(null)
+const confirmTarget = ref<'clear' | 'reset' | 'remove-bg' | null>(null)
 let confirmTimer: ReturnType<typeof setTimeout> | undefined
 
 /** 版本号连点解锁开发者分区（2s 内连续 10 次） */
@@ -140,7 +213,7 @@ function confirmDevMode() {
   showDevConfirm.value = false
 }
 
-function armConfirm(target: 'clear' | 'reset') {
+function armConfirm(target: 'clear' | 'reset' | 'remove-bg') {
   confirmTarget.value = target
   clearTimeout(confirmTimer)
   confirmTimer = setTimeout(() => {
@@ -166,6 +239,17 @@ function confirmReset() {
     localStorage.removeItem(DEBUG_STORAGE_KEY)
   } else {
     armConfirm('reset')
+  }
+}
+
+/** 移除背景：二次点击确认（armConfirm 模式，破坏性操作） */
+function confirmRemoveBg() {
+  if (confirmTarget.value === 'remove-bg') {
+    confirmTarget.value = null
+    store.setBackgroundImage(null)
+    store.setBackgroundEnabled(false)
+  } else {
+    armConfirm('remove-bg')
   }
 }
 
@@ -299,7 +383,6 @@ async function importEvents() {
         <span class="settings__row-label">主题</span>
         <span class="settings__row-value">
           {{ store.theme === 'dark' ? '暗色' : '浅色' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div class="settings__row">
@@ -324,6 +407,98 @@ async function importEvents() {
           </div>
         </span>
       </div>
+
+      <!-- 节日颜色：三类自定义（色块点击取色，change 即应用；恢复默认非破坏性单点） -->
+      <div
+        v-for="row in FESTIVAL_COLOR_ROWS"
+        :key="row.key"
+        class="settings__row"
+      >
+        <span class="settings__row-label">{{ row.label }}</span>
+        <span class="settings__row-value">
+          <span
+            class="settings__swatch"
+            :style="{ background: festivalSwatches[row.key] }"
+            :title="`自定义${row.label}颜色`"
+          >
+            <input
+              type="color"
+              class="settings__color-input"
+              :value="festivalSwatches[row.key]"
+              :aria-label="`自定义${row.label}颜色`"
+              @change="onFestivalColorChange(row.key, $event)"
+            />
+          </span>
+        </span>
+      </div>
+      <div class="settings__row" @click="store.resetFestivalColors()">
+        <span class="settings__row-label">恢复默认节日颜色</span>
+        <span class="settings__row-value">恢复</span>
+      </div>
+
+      <!-- 背景图片：选择即压缩并开启；有图时追加 开关/遮罩/模糊/移除 -->
+      <div class="settings__row" @click="pickBackground">
+        <span class="settings__row-label">背景图片</span>
+        <span class="settings__row-value">
+          {{ store.backgroundImage ? '已设置' : '未设置' }}
+        </span>
+      </div>
+      <template v-if="store.backgroundImage">
+        <div
+          class="settings__row"
+          @click="store.setBackgroundEnabled(!store.backgroundEnabled)"
+        >
+          <span class="settings__row-label">背景开关</span>
+          <span class="settings__row-value">
+            {{ store.backgroundEnabled ? '显示' : '隐藏' }}
+            <span
+              class="settings__switch"
+              :class="{ 'settings__switch--on': store.backgroundEnabled }"
+              aria-hidden="true"
+            >
+              <span class="settings__switch-thumb" />
+            </span>
+          </span>
+        </div>
+        <div class="settings__row">
+          <span class="settings__row-label">遮罩强度</span>
+          <span class="settings__row-value">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              class="settings__slider"
+              :value="store.backgroundDim"
+              aria-label="遮罩强度"
+              @input="onDimInput"
+            />
+          </span>
+        </div>
+        <div class="settings__row">
+          <span class="settings__row-label">模糊</span>
+          <span class="settings__row-value">
+            <input
+              type="range"
+              min="0"
+              max="20"
+              class="settings__slider"
+              :value="store.backgroundBlur"
+              aria-label="模糊"
+              @input="onBlurInput"
+            />
+          </span>
+        </div>
+        <div
+          class="settings__row"
+          :class="{ 'settings__row--danger': confirmTarget === 'remove-bg' }"
+          @click="confirmRemoveBg"
+        >
+          <span class="settings__row-label">移除背景</span>
+          <span class="settings__row-value">
+            {{ confirmTarget === 'remove-bg' ? '再次点击确认' : '移除' }}
+          </span>
+        </div>
+      </template>
     </div>
 
     <div class="settings__section">
@@ -332,16 +507,29 @@ async function importEvents() {
         <span class="settings__row-label">每周起始日</span>
         <span class="settings__row-value">
           {{ store.weekStartsOn === 0 ? '周日' : '周一' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div class="settings__row settings__row--disabled">
         <span class="settings__row-label">显示周数</span>
         <span class="settings__row-value">即将推出</span>
       </div>
-      <div class="settings__row settings__row--disabled">
-        <span class="settings__row-label">节假日订阅</span>
-        <span class="settings__row-value">即将推出</span>
+      <div
+        v-for="row in FESTIVAL_ROWS"
+        :key="row.key"
+        class="settings__row"
+        @click="store.setFestivalToggle(row.key, !store.festivalToggles[row.key])"
+      >
+        <span class="settings__row-label">{{ row.label }}</span>
+        <span class="settings__row-value">
+          {{ store.festivalToggles[row.key] ? '显示' : '隐藏' }}
+          <span
+            class="settings__switch"
+            :class="{ 'settings__switch--on': store.festivalToggles[row.key] }"
+            aria-hidden="true"
+          >
+            <span class="settings__switch-thumb" />
+          </span>
+        </span>
       </div>
     </div>
 
@@ -369,7 +557,6 @@ async function importEvents() {
         <span class="settings__row-label">开发水印</span>
         <span class="settings__row-value">
           {{ debugStore.showWatermark ? '显示' : '隐藏' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div
@@ -589,6 +776,38 @@ async function importEvents() {
 }
 .settings__row--danger:hover { background: color-mix(in srgb, var(--md-sys-color-error) 18%, transparent); }
 
+/* ── 节日颜色取色器（圆形色块 + 内嵌透明原生取色 input）── */
+.settings__swatch {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--md-sys-shape-corner-full);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-on-surface) 14%, transparent);
+  overflow: hidden;
+  cursor: pointer;
+}
+.settings__swatch:has(.settings__color-input:focus-visible) {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+.settings__color-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ── 背景调节滑杆（原生 range，token 化）── */
+.settings__slider {
+  width: 120px;
+  accent-color: var(--md-sys-color-primary);
+  cursor: pointer;
+}
+
 .settings__dev-hint { padding: 8px 16px 0; }
 
 .settings__row-label { font: var(--md-sys-typescale-body-large); color: var(--md-sys-color-on-surface); }
@@ -598,6 +817,41 @@ async function importEvents() {
   display: flex; align-items: center; gap: 8px;
 }
 .settings__row-hint { font: var(--md-sys-typescale-label-small); color: var(--md-sys-color-outline); }
+
+/* ── 轻量 MD3 switch（行内 value 位）── */
+.settings__switch {
+  display: inline-flex;
+  align-items: center;
+  width: 52px;
+  height: 32px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-highest);
+  border: 2px solid var(--md-sys-color-outline);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition:
+    background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard),
+    border-color var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+}
+.settings__switch-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline);
+  transition:
+    transform var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard),
+    background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+}
+.settings__switch--on {
+  background: var(--md-sys-color-primary);
+  border-color: var(--md-sys-color-primary);
+}
+.settings__switch--on .settings__switch-thumb {
+  background: var(--md-sys-color-on-primary);
+  transform: translateX(20px);
+}
 
 .settings__version {
   cursor: default; /* 继承行 value 样式；连点解锁 */

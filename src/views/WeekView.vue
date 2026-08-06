@@ -10,6 +10,7 @@ import type { DateCell } from '../core/calendar/types'
 import { useEventsStore } from '../stores/eventsStore'
 import { dateToKey, layoutTimeBlocks } from '../core/events/engine'
 import type { EventOccurrence, TimeBlockLayout } from '../core/events/types'
+import type { FestivalCategory } from '../core/holiday/types'
 
 const { store } = useCalendar()
 const eventsStore = useEventsStore()
@@ -23,7 +24,7 @@ useSwipeNavigation(root, (dir) => {
 
 const grid = computed(() => {
   const d = store.currentDate
-  return generateWeekGrid(d, getHolidayData(d.getFullYear()), store.weekStartsOn)
+  return generateWeekGrid(d, getHolidayData(d.getFullYear()), store.weekStartsOn, store.enabledCategories)
 })
 
 /** 周范围标题，如 2026年8月3日 – 9日 或跨月 1月27日 – 2月2日 */
@@ -72,6 +73,11 @@ function evtStyle(b: TimeBlockLayout) {
     left: b.laneCount > 1 ? `calc(${(b.laneIndex / b.laneCount) * 100}% + 1px)` : '1px',
     width: b.laneCount > 1 ? `calc(${100 / b.laneCount}% - 2px)` : 'calc(100% - 2px)',
   }
+}
+
+/** 分类配色修饰类（数字与 chip 共用）：wv__num--cat-* / wv__holiday--cat-* */
+function catClass(prefix: string, category: FestivalCategory | undefined): string {
+  return category ? `${prefix}--cat-${category}` : ''
 }
 
 /** 点击空白创建：按点击位置推算小时，选中该日并打开创建对话框 */
@@ -124,12 +130,15 @@ function onKeydown(e: KeyboardEvent) {
             <span class="wv__wd">{{ weekdayLabels[ci] }}</span>
             <span
               class="wv__num"
-              :class="{
-                'wv__num--today': isSameDay(day.date, today),
-                'wv__num--holiday': day.dayType === DayType.Holiday,
-              }"
+              :class="[
+                catClass('wv__num', day.holidayCategory),
+                {
+                  'wv__num--today': isSameDay(day.date, today),
+                  'wv__num--holiday': day.dayType === DayType.Holiday,
+                },
+              ]"
             >{{ day.date.getDate() }}</span>
-            <span v-if="day.holidayName" class="wv__holiday">{{ day.holidayName }}</span>
+            <span v-if="day.holidayName" :class="['wv__holiday', catClass('wv__holiday', day.holidayCategory)]">{{ day.holidayName }}</span>
             <span v-else-if="day.dayType === DayType.AdjustedWorkday" class="wv__holiday wv__holiday--adj">班</span>
           </div>
           <div v-if="anyAllDay" class="wv__allday">
@@ -257,17 +266,28 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .wv__num--holiday {
-  color: var(--md-sys-color-error);
+  color: var(--app-festival-statutory);
 }
+.wv__num--cat-traditional { color: var(--app-festival-traditional); }
+.wv__num--cat-western { color: var(--app-festival-western); }
 
 .wv__holiday {
   font: var(--md-sys-typescale-label-small);
-  color: var(--md-sys-color-error);
+  color: var(--app-festival-statutory);
   white-space: nowrap;
 }
-
+.wv__holiday--cat-traditional { color: var(--app-festival-traditional); }
+.wv__holiday--cat-western { color: var(--app-festival-western); }
+/* 调休补班「班」：inverse pill（与日视图 .dv__tag--adj 同款，三视图调休统一用 inverse 色系；
+   纯 inverse-primary 文字在浅色主题下对比度仅 ~1.6:1 不可读，pill 用 inverse-surface/
+   inverse-on-surface，5 套配色暗/亮均 >10:1 且不受配色方案覆盖） */
 .wv__holiday--adj {
-  color: var(--md-sys-color-tertiary);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
 }
 
 .wv__cell {

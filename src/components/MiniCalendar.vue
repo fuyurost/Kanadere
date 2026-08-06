@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { isSameDay } from 'date-fns'
 import { DayType } from '../core/holiday/types'
+import type { FestivalCategory } from '../core/holiday/types'
 import { useMiniCalendar } from '../composables/useCalendar'
 import { useCalendarStore } from '../stores/calendarStore'
 import { useEventsStore } from '../stores/eventsStore'
@@ -19,7 +20,9 @@ const miniDate = ref(new Date())
 const miniYear = computed(() => miniDate.value.getFullYear())
 const miniMonth = computed(() => miniDate.value.getMonth() + 1)
 
-const grid = computed(() => useMiniCalendar(miniYear.value, miniMonth.value, props.weekStartsOn))
+const grid = computed(() =>
+  useMiniCalendar(miniYear.value, miniMonth.value, props.weekStartsOn, store.enabledCategories),
+)
 
 const weekLabels = computed(() =>
   props.weekStartsOn === 0
@@ -53,6 +56,11 @@ function pickDate(date: Date) {
 function hasEvents(date: Date): boolean {
   return eventsStore.getEventsForDate(dateToKey(date)).length > 0
 }
+
+/** 分类配色修饰类：mini-cal__cell--cat-statutory|traditional|western */
+function cellCatClass(category: FestivalCategory | undefined): string {
+  return category ? `mini-cal__cell--cat-${category}` : ''
+}
 </script>
 
 <template>
@@ -69,14 +77,16 @@ function hasEvents(date: Date): boolean {
       <div
         v-for="(cell, i) in grid.cells"
         :key="i"
-        class="mini-cal__cell"
-        :class="{
-          'mini-cal__cell--today': isSameDay(cell.date, today) && cell.isCurrentMonth,
-          'mini-cal__cell--selected':
-            store.selectedDate != null && isSameDay(cell.date, store.selectedDate),
-          'mini-cal__cell--holiday': cell.dayType === DayType.Holiday && cell.isCurrentMonth,
-          'mini-cal__cell--dim': !cell.isCurrentMonth,
-        }"
+        :class="[
+          cellCatClass(cell.holidayCategory),
+          {
+            'mini-cal__cell--today': isSameDay(cell.date, today) && cell.isCurrentMonth,
+            'mini-cal__cell--selected':
+              store.selectedDate != null && isSameDay(cell.date, store.selectedDate),
+            'mini-cal__cell--holiday': cell.dayType === DayType.Holiday && cell.isCurrentMonth,
+            'mini-cal__cell--dim': !cell.isCurrentMonth,
+          },
+        ]"
         @click="pickDate(cell.date)"
       >
         <span>{{ cell.date.getDate() }}</span>
@@ -176,11 +186,21 @@ function hasEvents(date: Date): boolean {
 }
 
 .mini-cal__cell--holiday {
-  color: var(--md-sys-color-error);
+  color: var(--app-festival-statutory);
 }
+.mini-cal__cell--cat-traditional { color: var(--app-festival-traditional); }
+.mini-cal__cell--cat-western { color: var(--app-festival-western); }
 .mini-cal__cell--holiday.mini-cal__cell--today {
-  color: var(--md-sys-color-on-error);
-  background: var(--md-sys-color-error);
+  color: var(--app-festival-statutory-fg);
+  background: var(--app-festival-statutory);
+}
+.mini-cal__cell--cat-traditional.mini-cal__cell--today {
+  color: var(--app-festival-traditional-fg);
+  background: var(--app-festival-traditional);
+}
+.mini-cal__cell--cat-western.mini-cal__cell--today {
+  color: var(--app-festival-western-fg);
+  background: var(--app-festival-western);
 }
 
 .mini-cal__cell--dim {
