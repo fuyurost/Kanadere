@@ -186,3 +186,16 @@
   --md-sys-color-on-primary-container: #2E1600;
   --md-sys-color-inverse-primary: #FFB77C;
 }
+
+/* ════════════ 节日颜色语义别名（个性化：设置页可自定义覆盖） ════════════ */
+
+/* 引用 var() 在解析时动态跟随 scheme / 动态取色；自定义色由 store 内联覆盖同名变量，
+   未自定义的类别始终跟随当前主题色板 */
+:root {
+  --app-festival-statutory: var(--md-sys-color-error);
+  --app-festival-statutory-fg: var(--md-sys-color-on-error);
+  --app-festival-traditional: var(--md-sys-color-tertiary);
+  --app-festival-traditional-fg: var(--md-sys-color-on-tertiary);
+  --app-festival-western: var(--md-sys-color-secondary);
+  --app-festival-western-fg: var(--md-sys-color-on-secondary);
+}

@@ -114,3 +114,54 @@ select,
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ════════════ 图片背景（个性化：设置页可调遮罩/模糊） ════════════ */
+/* html[data-background] 由 store 控制：body 背景透明，图片层 + surface 遮罩层
+   以固定伪元素垫在内容下（z-index: -1），主视图容器透明化让背景透出；
+   侧边栏 / 设置 overlay / 事件对话框保持不透明保证可读 */
+html[data-background] body {
+  background: transparent;
+}
+
+/* 图片层：铺满视口，blur 由内联变量驱动；scale(1.06) 放大盖住模糊边缘 */
+html[data-background] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--app-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(var(--app-bg-blur));
+  transform: scale(1.06);
+  pointer-events: none;
+}
+
+/* 遮罩层：surface 按 --app-bg-dim 百分比压暗/提亮，保证前景可读 */
+html[data-background] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--md-sys-color-surface) calc(var(--app-bg-dim) * 1%), transparent);
+  pointer-events: none;
+}
+
+/* 主视图透明化（背景透出）：应用壳 / 三视图根 / 月视图卡片 / 周/日视图内部网格 */
+html[data-background] .app,
+html[data-background] .mv,
+html[data-background] .wv,
+html[data-background] .dv,
+html[data-background] .cg,
+html[data-background] .wv__grid,
+html[data-background] .wv__day-head,
+html[data-background] .dv__body {
+  background: transparent;
+}
+
+/* 周末列底色半透明化（约 55%），背景透过又不至于糊掉分隔线 */
+html[data-background] .dc--wkcol,
+html[data-background] .wv__day-col--weekend {
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 55%, transparent);
+}
