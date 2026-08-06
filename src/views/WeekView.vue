@@ -278,12 +278,16 @@ function onKeydown(e: KeyboardEvent) {
 }
 .wv__holiday--cat-traditional { color: var(--app-festival-traditional); }
 .wv__holiday--cat-western { color: var(--app-festival-western); }
+/* 调休补班「班」：inverse pill（与日视图 .dv__tag--adj 同款，三视图调休统一用 inverse 色系；
+   纯 inverse-primary 文字在浅色主题下对比度仅 ~1.6:1 不可读，pill 用 inverse-surface/
+   inverse-on-surface，5 套配色暗/亮均 >10:1 且不受配色方案覆盖） */
 .wv__holiday--adj {
-  color: var(--md-sys-color-tertiary);
   display: inline-flex;
   align-items: center;
   padding: 0 6px;
   border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
 }
 
 .wv__cell {

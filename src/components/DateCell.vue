@@ -127,10 +127,11 @@ const subLabel = computed(() =>
 .dc--cat-statutory::before { background: var(--app-festival-statutory); }
 .dc--cat-traditional::before { background: var(--app-festival-traditional); }
 .dc--cat-western::before { background: var(--app-festival-western); }
+/* 调休补班：tertiary 让位给传统节日，改用 inverse-primary（5 套配色暗/亮均与
    primary/secondary/tertiary/error 不撞：如暗蓝 #3A5DA1 vs primary #A8C7FA…） */
 .dc--adjusted::before,
 .dc--today-adjusted::before {
-  background: var(--md-sys-color-tertiary);
+  background: var(--md-sys-color-inverse-primary);
 }
 
 /* ── Number ── */
@@ -240,7 +241,7 @@ const subLabel = computed(() =>
 .dc--cat-traditional:hover::after { background: color-mix(in srgb, var(--app-festival-traditional) 6%, transparent); }
 .dc--cat-western:hover::after { background: color-mix(in srgb, var(--app-festival-western) 6%, transparent); }
 .dc--adjusted:hover::after,
-.dc--today-adjusted:hover::after { background: color-mix(in srgb, var(--md-sys-color-tertiary) 6%, transparent); }
+.dc--today-adjusted:hover::after { background: color-mix(in srgb, var(--md-sys-color-inverse-primary) 6%, transparent); }
 
 /* ── Weekend / today-weekend ── */
 .dc--weekend .dc__num { color: var(--md-sys-color-on-surface-variant); }
@@ -262,9 +263,11 @@ const subLabel = computed(() =>
   background: var(--app-festival-western);
   color: var(--app-festival-western-fg);
 }
+/* 调休徽章：inverse-primary 底 + on-primary-container 前景（5 套配色暗/亮下均对比良好：
+   暗 #3A5DA1+#D5E3FF、亮 #A8C7FA+#001B3F；MD3 无 on-inverse-primary token） */
 .dc--today-adjusted .dc__num--badge {
-  background: var(--md-sys-color-tertiary);
-  color: var(--md-sys-color-on-tertiary);
+  background: var(--md-sys-color-inverse-primary);
+  color: var(--md-sys-color-on-primary-container);
 }
 
 /* ── Selected：圆角块（复用 ::after 圆角机制，不整格铺色）── */

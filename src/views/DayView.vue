@@ -197,9 +197,11 @@ function onKeydown(e: KeyboardEvent) {
   background: var(--app-festival-western);
 }
 
+/* 调休补班：MD3 inverse pill（反色，与分类 tag 的 container 风格区分）；
+   inverse-surface/inverse-on-surface 不受 5 套配色方案覆盖，暗/亮对比度均 >10:1 */
 .dv__tag--adj {
-  color: var(--md-sys-color-on-tertiary-container);
-  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-inverse-on-surface);
+  background: var(--md-sys-color-inverse-surface);
 }
 
 /* ── 农历/节气子标签（节气高亮、农历弱化）── */

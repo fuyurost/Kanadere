@@ -299,7 +299,6 @@ async function importEvents() {
         <span class="settings__row-label">主题</span>
         <span class="settings__row-value">
           {{ store.theme === 'dark' ? '暗色' : '浅色' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div class="settings__row">
@@ -332,7 +331,6 @@ async function importEvents() {
         <span class="settings__row-label">每周起始日</span>
         <span class="settings__row-value">
           {{ store.weekStartsOn === 0 ? '周日' : '周一' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div class="settings__row settings__row--disabled">
@@ -369,7 +367,6 @@ async function importEvents() {
         <span class="settings__row-label">开发水印</span>
         <span class="settings__row-value">
           {{ debugStore.showWatermark ? '显示' : '隐藏' }}
-          <span class="settings__row-hint">点击切换</span>
         </span>
       </div>
       <div
