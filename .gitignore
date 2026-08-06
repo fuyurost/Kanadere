@@ -16,6 +16,9 @@ dist-ssr
 src-tauri/target
 src-tauri/gen
 
+# Release notes (发布说明不入库，由发布时手动提供)
+RELEASE_NOTES.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
