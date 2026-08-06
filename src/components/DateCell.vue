@@ -5,6 +5,7 @@ import { DayType } from '../core/holiday/types'
 import { useCalendarStore } from '../stores/calendarStore'
 import { useEventsStore } from '../stores/eventsStore'
 import { dateToKey } from '../core/events/engine'
+import { getLunarSubLabel } from '../core/lunar/lunar'
 
 const props = defineProps<{
   cell: DateCell
@@ -39,16 +40,27 @@ const label = computed(() => {
   if (props.cell.dayType === DayType.AdjustedWorkday) return '班'
   return null
 })
+
+/** 分类配色修饰类：dc--cat-statutory|traditional|western（无类别时不加） */
+const catClass = computed(() =>
+  props.cell.holidayCategory ? `dc--cat-${props.cell.holidayCategory}` : '',
+)
+
+/** 农历/节气子标签（仅当月显示） */
+const subLabel = computed(() =>
+  props.cell.isCurrentMonth ? getLunarSubLabel(props.cell.date) : null,
+)
 </script>
 
 <template>
   <div
-    :class="['dc', `dc--${cellState}`, { 'dc--wkcol': isWeekendCol && cell.isCurrentMonth && cellState !== 'selected' }]"
+    :class="['dc', `dc--${cellState}`, catClass, { 'dc--wkcol': isWeekendCol && cell.isCurrentMonth && cellState !== 'selected' }]"
     @click="emit('select', cell.date)"
     @dblclick.stop="onAdd"
   >
     <div class="dc__top">
       <span :class="['dc__num', { 'dc__num--badge': isToday || isSelected }]">{{ cell.date.getDate() }}</span>
+      <span v-if="subLabel" :class="['dc__sub', { 'dc__sub--term': subLabel.isTerm }]">{{ subLabel.text }}</span>
     </div>
     <button class="dc__add" aria-label="添加事件" @click.stop="onAdd">+</button>
     <span v-if="label" :class="['dc__label', { 'dc__label--holiday': cell.dayType === DayType.Holiday }]">{{ label }}</span>
@@ -108,8 +120,14 @@ const label = computed(() => {
 
 .dc--holiday::before,
 .dc--today-holiday::before {
-  background: var(--md-sys-color-error);
+  background: var(--app-festival-statutory);
 }
+/* 分类配色：法定/传统/西方（语义别名，设置页可自定义；默认跟随 error/tertiary/secondary）；
+   覆盖在无类别回退（statutory）之上 */
+.dc--cat-statutory::before { background: var(--app-festival-statutory); }
+.dc--cat-traditional::before { background: var(--app-festival-traditional); }
+.dc--cat-western::before { background: var(--app-festival-western); }
+   primary/secondary/tertiary/error 不撞：如暗蓝 #3A5DA1 vs primary #A8C7FA…） */
 .dc--adjusted::before,
 .dc--today-adjusted::before {
   background: var(--md-sys-color-tertiary);
@@ -140,6 +158,20 @@ const label = computed(() => {
   color: var(--md-sys-color-on-primary);
 }
 
+/* ── 农历/节气子标签（数字右侧小字）── */
+.dc__sub {
+  font: var(--md-sys-typescale-label-small);
+  color: var(--md-sys-color-on-surface-variant);
+  padding: 8px 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.dc__sub--term {
+  color: var(--md-sys-color-tertiary);
+}
+
 /* ── Label ── */
 .dc__label {
   font: var(--md-sys-typescale-label-small);
@@ -147,7 +179,9 @@ const label = computed(() => {
   padding-left: 6px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.dc__label--holiday { color: var(--md-sys-color-error); }
+.dc__label--holiday { color: var(--app-festival-statutory); }
+.dc--cat-traditional .dc__label--holiday { color: var(--app-festival-traditional); }
+.dc--cat-western .dc__label--holiday { color: var(--app-festival-western); }
 
 /* ── Events ── */
 .dc__events {
@@ -202,7 +236,9 @@ const label = computed(() => {
 /* ── Hover（透明度内联在背景色中，避免 opacity 跳变闪白）── */
 .dc--default:hover::after { background: color-mix(in srgb, var(--md-sys-color-on-surface) 6%, transparent); }
 .dc--holiday:hover::after,
-.dc--today-holiday:hover::after { background: color-mix(in srgb, var(--md-sys-color-error) 6%, transparent); }
+.dc--today-holiday:hover::after { background: color-mix(in srgb, var(--app-festival-statutory) 6%, transparent); }
+.dc--cat-traditional:hover::after { background: color-mix(in srgb, var(--app-festival-traditional) 6%, transparent); }
+.dc--cat-western:hover::after { background: color-mix(in srgb, var(--app-festival-western) 6%, transparent); }
 .dc--adjusted:hover::after,
 .dc--today-adjusted:hover::after { background: color-mix(in srgb, var(--md-sys-color-tertiary) 6%, transparent); }
 
@@ -215,8 +251,16 @@ const label = computed(() => {
 
 /* ── Today-holiday / today-adjusted ── */
 .dc--today-holiday .dc__num--badge {
-  background: var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error);
+  background: var(--app-festival-statutory);
+  color: var(--app-festival-statutory-fg);
+}
+.dc--cat-traditional.dc--today-holiday .dc__num--badge {
+  background: var(--app-festival-traditional);
+  color: var(--app-festival-traditional-fg);
+}
+.dc--cat-western.dc--today-holiday .dc__num--badge {
+  background: var(--app-festival-western);
+  color: var(--app-festival-western-fg);
 }
 .dc--today-adjusted .dc__num--badge {
   background: var(--md-sys-color-tertiary);
