@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ViewMode } from '../core/calendar/types'
 import { generateSchemeFromSeed } from '../core/color/scheme'
+import { enabledFestivalCategories } from '../core/holiday/engine'
+import { FestivalCategory } from '../core/holiday/types'
+import type { FestivalCategory as FestivalCategoryType } from '../core/holiday/types'
 
 export type AppView = 'month' | 'settings'
 export type Theme = 'dark' | 'light'
@@ -10,6 +13,27 @@ type NavDirection = 'forward' | 'backward'
 
 const PREFS_KEY = 'kanadere.preferences.v1'
 const COLOR_SCHEMES: ColorScheme[] = ['blue', 'green', 'purple', 'orange', 'dynamic']
+
+/** 节日开关默认值（全部显示为节假日） */
+function defaultFestivalToggles(): Record<FestivalCategoryType, boolean> {
+  return {
+    [FestivalCategory.Statutory]: true,
+    [FestivalCategory.Traditional]: true,
+    [FestivalCategory.Western]: true,
+  }
+}
+
+/** 读取持久化节日开关：缺失/非布尔 → true（旧版本数据无此字段时全部默认开启） */
+function parseFestivalToggles(raw: unknown): Record<FestivalCategoryType, boolean> {
+  const toggles = defaultFestivalToggles()
+  if (typeof raw !== 'object' || raw === null) return toggles
+  const obj = raw as Record<string, unknown>
+  for (const key of Object.keys(FestivalCategory)) {
+    const v = obj[key]
+    if (typeof v === 'boolean') toggles[key as FestivalCategoryType] = v
+  }
+  return toggles
+}
 
 /** 动态取色时覆盖的 CSS 变量（与 tokens.css 静态方案同组） */
 const SCHEME_CSS_VARS = [
@@ -25,9 +49,9 @@ interface Prefs {
   weekStartsOn: 0 | 1
   colorScheme: ColorScheme
   dynamicSeed: string | null
+  festivalToggles: Record<FestivalCategoryType, boolean>
 }
 
-/** 读取持久化偏好（主题/周起始日/配色/动态种子色）；损坏或缺失降级为默认 */
 function loadPrefs(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY)
@@ -43,12 +67,20 @@ function loadPrefs(): Prefs {
           typeof p.dynamicSeed === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.dynamicSeed)
             ? p.dynamicSeed
             : null,
+        festivalToggles: parseFestivalToggles(p.festivalToggles),
+            : null,
       }
     }
   } catch {
     // 损坏数据降级
   }
-  return { theme: 'dark', weekStartsOn: 1, colorScheme: 'blue', dynamicSeed: null }
+  return {
+    theme: 'dark',
+    weekStartsOn: 1,
+    colorScheme: 'blue',
+    dynamicSeed: null,
+    festivalToggles: defaultFestivalToggles(),
+  }
 }
 
 export const useCalendarStore = defineStore('calendar', () => {
@@ -60,8 +92,12 @@ export const useCalendarStore = defineStore('calendar', () => {
   const theme = ref<Theme>(prefs.theme)
   const colorScheme = ref<ColorScheme>(prefs.colorScheme)
   const dynamicSeed = ref<string | null>(prefs.dynamicSeed)
+  const festivalToggles = ref<Record<FestivalCategoryType, boolean>>(prefs.festivalToggles)
   const navDirection = ref<NavDirection>('forward')
   const viewMode = ref<ViewMode>('month')
+
+  /** 启用的节日类别集合（供日历引擎过滤，替换对象时自动更新） */
+  const enabledCategories = computed(() => enabledFestivalCategories(festivalToggles.value))
 
   /** 动态取色：seed → 当前主题色板 → 覆盖 CSS 变量；静态方案则清除覆盖 */
   function applyDynamicScheme() {
@@ -92,7 +128,12 @@ export const useCalendarStore = defineStore('calendar', () => {
   }, { immediate: true })
 
   watch(
-    [theme, colorScheme, dynamicSeed],
+    [
+      theme,
+      colorScheme,
+      dynamicSeed,
+      festivalToggles,
+    ],
     () => {
       applyDynamicScheme()
       try {
@@ -103,6 +144,7 @@ export const useCalendarStore = defineStore('calendar', () => {
             weekStartsOn: weekStartsOn.value,
             colorScheme: colorScheme.value,
             dynamicSeed: dynamicSeed.value,
+            festivalToggles: festivalToggles.value,
           }),
         )
       } catch {
@@ -227,6 +269,28 @@ export const useCalendarStore = defineStore('calendar', () => {
     colorScheme.value = 'dynamic'
   }
 
+  /** 切换节日类别开关（整体替换对象，保证持久化 watch 触发） */
+  function setFestivalToggle(category: FestivalCategoryType, enabled: boolean) {
+    festivalToggles.value = { ...festivalToggles.value, [category]: enabled }
+  }
+
+  }
+
+  }
+
+  }
+
+  }
+
+    if (hex !== null && !/^#[0-9a-fA-F]{6}$/.test(hex)) return
+    if (hex === null) {
+      delete next[category]
+    } else {
+    }
+  }
+
+  }
+
   /** 恢复全部默认状态（开发者调试/一键重置） */
   function reset() {
     currentView.value = 'month'
@@ -236,6 +300,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     theme.value = 'dark'
     colorScheme.value = 'blue'
     dynamicSeed.value = null
+    festivalToggles.value = defaultFestivalToggles()
     navDirection.value = 'forward'
     viewMode.value = 'month'
   }
@@ -248,6 +313,8 @@ export const useCalendarStore = defineStore('calendar', () => {
     theme,
     colorScheme,
     dynamicSeed,
+    festivalToggles,
+    enabledCategories,
     navDirection,
     viewMode,
     reset,

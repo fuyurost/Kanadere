@@ -1,10 +1,12 @@
-import type { DayType } from '../holiday/types'
+import type { DayType, FestivalCategory } from '../holiday/types'
 
 export interface DateCell {
   date: Date
   dayType: DayType
   isCurrentMonth: boolean
   holidayName?: string
+  /** 节假日类别（dayType===Holiday 时由引擎填充，与 holidayName 同一条目） */
+  holidayCategory?: FestivalCategory
 }
 
 export type ViewMode = 'month' | 'week' | 'day'

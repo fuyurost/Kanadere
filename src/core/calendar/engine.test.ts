@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { generateMonthGrid, generateWeekGrid, generateDayCell } from './engine'
-import { DayType } from '../holiday/types'
+import { enabledFestivalCategories } from '../holiday/engine'
+import { DayType, FestivalCategory } from '../holiday/types'
 import { data2025 } from '../holiday/data/2025'
 
 describe('generateMonthGrid', () => {
@@ -121,5 +122,90 @@ describe('generateDayCell', () => {
   it('普通工作日标记为 Workday', () => {
     const { cell } = generateDayCell(new Date(2025, 0, 15), data2025)
     expect(cell.dayType).toBe(DayType.Workday)
+  })
+})
+
+describe('网格生成：enabled 过滤参数', () => {
+  const noTraditional = enabledFestivalCategories({ statutory: true, traditional: false, western: true })
+  const noStatutory = enabledFestivalCategories({ statutory: false, traditional: true, western: true })
+
+  it('禁用传统后 元宵节不再是 Holiday 且无节日名（2025-02-12 周三 → Workday）', () => {
+    const grid = generateMonthGrid(2025, 2, data2025, 1, noTraditional)
+    const yuanxiao = grid.cells.find(
+      c => c.date.getFullYear() === 2025 && c.date.getMonth() === 1 && c.date.getDate() === 12,
+    )
+    expect(yuanxiao!.dayType).toBe(DayType.Workday)
+    expect(yuanxiao!.holidayName).toBeUndefined()
+  })
+
+  it('禁用法定后 春节回落且调休仍生效', () => {
+    const grid = generateMonthGrid(2025, 1, data2025, 1, noStatutory)
+    const jan28 = grid.cells.find(
+      c => c.date.getFullYear() === 2025 && c.date.getMonth() === 0 && c.date.getDate() === 28,
+    )
+    expect(jan28!.dayType).toBe(DayType.Workday) // 2025-01-28 周二
+    const jan26 = grid.cells.find(
+      c => c.date.getFullYear() === 2025 && c.date.getMonth() === 0 && c.date.getDate() === 26,
+    )
+    expect(jan26!.dayType).toBe(DayType.AdjustedWorkday)
+  })
+
+  it('generateDayCell 透传过滤（禁用传统 → 七夕回落）', () => {
+    const { cell } = generateDayCell(new Date(2025, 7, 29), data2025, noTraditional)
+    expect(cell.dayType).toBe(DayType.Workday) // 2025-08-29 周五
+    expect(cell.holidayName).toBeUndefined()
+  })
+
+  it('缺省参数仍全部显示（与旧行为一致）', () => {
+    const grid = generateMonthGrid(2025, 2, data2025, 1)
+    const yuanxiao = grid.cells.find(
+      c => c.date.getFullYear() === 2025 && c.date.getMonth() === 1 && c.date.getDate() === 12,
+    )
+    expect(yuanxiao!.dayType).toBe(DayType.Holiday)
+    expect(yuanxiao!.holidayName).toBe('元宵节')
+  })
+})
+
+describe('网格生成：holidayCategory', () => {
+  it('元宵节 → traditional（名称与类别同条目）', () => {
+    const grid = generateMonthGrid(2025, 2, data2025, 1)
+    const c = grid.cells.find(
+      cell => cell.date.getFullYear() === 2025 && cell.date.getMonth() === 1 && cell.date.getDate() === 12,
+    )
+    expect(c!.dayType).toBe(DayType.Holiday)
+    expect(c!.holidayName).toBe('元宵节')
+    expect(c!.holidayCategory).toBe(FestivalCategory.Traditional)
+  })
+
+  it('春节 → statutory', () => {
+    const grid = generateMonthGrid(2025, 1, data2025, 1)
+    const c = grid.cells.find(
+      cell => cell.date.getFullYear() === 2025 && cell.date.getMonth() === 0 && cell.date.getDate() === 28,
+    )
+    expect(c!.holidayCategory).toBe(FestivalCategory.Statutory)
+    expect(c!.holidayName).toBe('春节')
+  })
+
+  it('圣诞节 → western（generateDayCell）', () => {
+    const { cell } = generateDayCell(new Date(2025, 11, 25), data2025)
+    expect(cell.holidayName).toBe('圣诞节')
+    expect(cell.holidayCategory).toBe(FestivalCategory.Western)
+  })
+
+  it('禁用类别后 holidayCategory undefined（回落为 Workday）', () => {
+    const noTraditional = enabledFestivalCategories({ statutory: true, traditional: false, western: true })
+    const grid = generateMonthGrid(2025, 2, data2025, 1, noTraditional)
+    const c = grid.cells.find(
+      cell => cell.date.getFullYear() === 2025 && cell.date.getMonth() === 1 && cell.date.getDate() === 12,
+    )
+    expect(c!.dayType).toBe(DayType.Workday)
+    expect(c!.holidayName).toBeUndefined()
+    expect(c!.holidayCategory).toBeUndefined()
+  })
+
+  it('普通日无 holidayCategory', () => {
+    const { cell } = generateDayCell(new Date(2025, 5, 10), data2025)
+    expect(cell.holidayCategory).toBeUndefined()
+    expect(cell.holidayName).toBeUndefined()
   })
 })
