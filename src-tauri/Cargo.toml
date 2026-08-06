@@ -1,6 +1,6 @@
 [package]
 name = "kanadere"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 description = "现代化中国节假日日历应用"
 authors = ["fuyurost"]
 edition = "2021"
