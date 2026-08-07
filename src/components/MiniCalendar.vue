@@ -78,6 +78,7 @@ function cellCatClass(category: FestivalCategory | undefined): string {
         v-for="(cell, i) in grid.cells"
         :key="i"
         :class="[
+          'mini-cal__cell',
           cellCatClass(cell.holidayCategory),
           {
             'mini-cal__cell--today': isSameDay(cell.date, today) && cell.isCurrentMonth,
